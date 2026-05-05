@@ -64,7 +64,6 @@ const roiHistorySchema = new Schema<IRoiHistory>(
 );
 
 roiHistorySchema.index({ userId: 1, createdAt: -1 });
-roiHistorySchema.index({ distributionBatchId: 1 });
 
 const RoiHistory: Model<IRoiHistory> = mongoose.model<IRoiHistory>('RoiHistory', roiHistorySchema);
 
