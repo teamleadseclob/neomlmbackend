@@ -22,6 +22,11 @@ interface TicketQuery {
   [key: string]: unknown;
 }
 
+function ticketQuery(ticketId: string): FilterQuery<ISupportTicket> {
+  if (/^[a-fA-F0-9]{24}$/.test(ticketId)) return { _id: ticketId };
+  return { ticketId };
+}
+
 class SupportService {
   // ─── User Methods ───
 
@@ -119,7 +124,7 @@ class SupportService {
   }
 
   async getAdminTicketById(ticketId: string): Promise<ISupportTicket> {
-    const ticket = await SupportTicket.findOne({ ticketId })
+    const ticket = await SupportTicket.findOne(ticketQuery(ticketId))
       .populate('userId', 'name userId email swpBalance totalInvested walletBalance');
     if (!ticket) throw ApiError.notFound('Ticket not found');
     return ticket;
@@ -129,7 +134,7 @@ class SupportService {
     ticketId: string,
     data: { status: string; adminReply?: string },
   ): Promise<ISupportTicket> {
-    const ticket = await SupportTicket.findOne({ ticketId });
+    const ticket = await SupportTicket.findOne(ticketQuery(ticketId));
     if (!ticket) throw ApiError.notFound('Ticket not found');
 
     // Validate status transitions
