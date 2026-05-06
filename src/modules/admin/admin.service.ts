@@ -11,6 +11,7 @@ import RoiHistory from '../../models/RoiHistory';
 import MultiLevelReward from '../../models/MultiLevelReward';
 import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
+import Transaction from '../../models/Transaction';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -268,6 +269,111 @@ class AdminService {
     const updated = await adminRepository.updateLevelCommission(level, updateData);
     if (!updated) throw ApiError.internal('Failed to update config');
     return updated;
+  }
+
+  // Unified Transactions
+  async getTransactions(query: AdminQuery): Promise<{ transactions: any[]; pagination: Pagination }> {
+    const page = parseInt(query.page || '1', 10);
+    const limit = parseInt(query.limit || '20', 10);
+    const skip = (page - 1) * limit;
+
+    const { type, userId, fromDate, toDate, search } = query as any;
+
+    const dateFilter: Record<string, unknown> = {};
+    if (fromDate) dateFilter.$gte = new Date(fromDate as string);
+    if (toDate) dateFilter.$lte = new Date(toDate as string);
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+
+    // Resolve userId search to ObjectId
+    let userObjectId: any = null;
+    if (userId) {
+      const user = await User.findOne({ userId }).select('_id').lean();
+      if (!user) return { transactions: [], pagination: { page, limit, totalDocs: 0, totalPages: 0, skip } };
+      userObjectId = user._id;
+    }
+
+    const typesToFetch = type
+      ? [type]
+      : ['withdrawal', 'swp_purchase', 'investment', 'level_commission', 'roi', 'multilevel_reward', 'rank_reward', 'rank_bonus'];
+
+    const queries: Promise<any[]>[] = [];
+
+    const buildFilter = (userField: string) => {
+      const f: Record<string, unknown> = {};
+      if (userObjectId) f[userField] = userObjectId;
+      if (hasDateFilter) f.createdAt = dateFilter;
+      return f;
+    };
+
+    if (typesToFetch.includes('withdrawal')) {
+      const f = buildFilter('userId');
+      if (search) f.$or = [{ txHash: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }];
+      queries.push(
+        Transaction.find(f).populate('userId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'withdrawal', txAmount: d.amount, txDate: d.createdAt }))),
+      );
+    }
+
+    if (typesToFetch.includes('swp_purchase')) {
+      queries.push(
+        SwpPurchase.find(buildFilter('userId')).populate('userId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'swp_purchase', txAmount: d.amount, txDate: d.createdAt }))),
+      );
+    }
+
+    if (typesToFetch.includes('investment')) {
+      queries.push(
+        Investment.find(buildFilter('userId')).populate('userId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'investment', txAmount: d.amount, txDate: d.createdAt }))),
+      );
+    }
+
+    if (typesToFetch.includes('level_commission')) {
+      queries.push(
+        Commission.find(buildFilter('earnerId')).populate('earnerId', 'name userId email').populate('fromUserId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'level_commission', txAmount: d.netAmount, txDate: d.createdAt, userId: d.earnerId }))),
+      );
+    }
+
+    if (typesToFetch.includes('roi')) {
+      queries.push(
+        RoiHistory.find(buildFilter('userId')).populate('userId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'roi', txAmount: d.roiEarned, txDate: d.createdAt }))),
+      );
+    }
+
+    if (typesToFetch.includes('multilevel_reward')) {
+      queries.push(
+        MultiLevelReward.find(buildFilter('earnerId')).populate('earnerId', 'name userId email').populate('fromUserId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'multilevel_reward', txAmount: d.netAmount, txDate: d.createdAt, userId: d.earnerId }))),
+      );
+    }
+
+    if (typesToFetch.includes('rank_reward')) {
+      queries.push(
+        RankReward.find(buildFilter('userId')).populate('userId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'rank_reward', txAmount: d.netAmount, txDate: d.createdAt }))),
+      );
+    }
+
+    if (typesToFetch.includes('rank_bonus')) {
+      queries.push(
+        RankBonusReward.find(buildFilter('userId')).populate('userId', 'name userId email').lean()
+          .then(docs => docs.map(d => ({ ...d, txType: 'rank_bonus', txAmount: d.netAmount, txDate: d.createdAt }))),
+      );
+    }
+
+    const results = await Promise.all(queries);
+    const all = results.flat().sort((a, b) => new Date(b.txDate).getTime() - new Date(a.txDate).getTime());
+
+    const totalDocs = all.length;
+    const totalPages = Math.ceil(totalDocs / limit);
+    const transactions = all.slice(skip, skip + limit);
+
+    return {
+      transactions,
+      pagination: { page, limit, totalDocs, totalPages, skip },
+    };
   }
 }
 

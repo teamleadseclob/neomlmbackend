@@ -44,4 +44,7 @@ router.get('/events', eventController.getAllEvents);
 router.patch('/events/:id', validate(eventValidation.updateEvent), eventController.updateEvent);
 router.delete('/events/:id', validate(eventValidation.eventIdParam), eventController.deleteEvent);
 
+// Transactions
+router.get('/transactions', validate(adminValidation.getTransactions), adminController.getTransactions);
+
 export default router;

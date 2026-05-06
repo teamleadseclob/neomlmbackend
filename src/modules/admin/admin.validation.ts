@@ -101,3 +101,18 @@ export const updateLevelCommission: ValidationSchema = {
     'object.min': 'At least one field must be provided',
   }),
 };
+
+export const getTransactions: ValidationSchema = {
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    type: Joi.string().valid(
+      'withdrawal', 'swp_purchase', 'investment', 'level_commission',
+      'roi', 'multilevel_reward', 'rank_reward', 'rank_bonus',
+    ).optional(),
+    userId: Joi.string().trim().optional(),
+    fromDate: Joi.date().iso().optional(),
+    toDate: Joi.date().iso().optional(),
+    search: Joi.string().trim().max(100).optional(),
+  }),
+};

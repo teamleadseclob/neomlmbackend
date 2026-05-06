@@ -78,3 +78,9 @@ export const updateLevelCommission = catchAsync(async (req: Request, res: Respon
   const config = await adminService.updateLevelCommission(level, req.body);
   return ApiResponse.success(res, `Level ${level} commission updated successfully`, config);
 });
+
+// Transactions
+export const getTransactions = catchAsync(async (req: Request, res: Response) => {
+  const { transactions, pagination } = await adminService.getTransactions(req.query);
+  return ApiResponse.paginated(res, 'Transactions retrieved successfully', transactions, pagination);
+});
