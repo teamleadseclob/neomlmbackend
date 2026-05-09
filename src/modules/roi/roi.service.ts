@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import ApiError from '../../utils/ApiError';
 import User from '../../models/User';
 import Investment from '../../models/Investment';
@@ -39,7 +39,7 @@ class RoiService {
     if (!config) throw ApiError.badRequest('ROI config not found. Please set up ROI config first.');
     if (config.dailyRoiPercentage <= 0) throw ApiError.badRequest('Daily ROI percentage is 0. Update ROI config before distributing.');
 
-    const batchId = uuidv4();
+    const batchId = crypto.randomUUID();
     const now = new Date();
     const dailyRate = config.dailyRoiPercentage / 100;
 
