@@ -24,6 +24,9 @@ import { userRouter as supportUserRoutes, adminRouter as supportAdminRoutes } fr
 
 const app = express();
 
+// Trust proxy (behind Nginx/load balancer)
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: false,
 }));
