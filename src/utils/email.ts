@@ -47,7 +47,7 @@ export const generateOtp = (): string => {
   return Math.floor(min + Math.random() * (max - min + 1)).toString();
 };
 
-export const sendReferralEmail = async (to: string, referrerName: string, referralId: string): Promise<void> => {
+export const sendReferralEmail = async (to: string, referrerName: string, referralLink: string): Promise<void> => {
   const mailOptions = {
     from: `"${env.smtp.fromName}" <${env.smtp.fromEmail}>`,
     to,
@@ -57,17 +57,16 @@ export const sendReferralEmail = async (to: string, referrerName: string, referr
         <h2 style="color: #1e293b; margin-bottom: 16px;">You're Invited!</h2>
         <p style="color: #475569; font-size: 15px;"><strong>${referrerName}</strong> has invited you to join NEO MLM.</p>
         <div style="background: #f1f5f9; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-          <p style="color: #64748b; font-size: 13px; margin: 0 0 8px;">Use this Referral ID during registration</p>
-          <span style="font-size: 28px; font-weight: 700; letter-spacing: 4px; color: #1e293b;">${referralId}</span>
+          <a href="${referralLink}" style="display: inline-block; background: #1e293b; color: #fff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-size: 16px; font-weight: 600;">Join Now</a>
         </div>
-        <p style="color: #94a3b8; font-size: 13px; margin-top: 24px;">Enter the referral ID above in the Sponsor ID field when you register.</p>
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 24px;">Or copy this link: <a href="${referralLink}">${referralLink}</a></p>
       </div>
     `,
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    logger.info({ to, referralId }, 'Referral email sent');
+    logger.info({ to }, 'Referral email sent');
   } catch (error) {
     logger.error({ to, error }, 'Failed to send referral email');
     throw new Error('Failed to send referral email. Please try again.');

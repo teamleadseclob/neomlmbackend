@@ -40,6 +40,6 @@ export const getIncomeChart = catchAsync(async (req, res: Response) => {
 });
 
 export const sendReferral = catchAsync(async (req, res: Response) => {
-  const result = await userService.sendReferralInvite((req as AuthRequest).user._id, req.body.email);
+  const result = await userService.sendReferralInvite((req as AuthRequest).user._id, req.body.email, req.body.referralLink);
   return ApiResponse.success(res, result.message, { email: result.email });
 });

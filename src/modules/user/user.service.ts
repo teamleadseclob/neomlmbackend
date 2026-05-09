@@ -212,7 +212,7 @@ class UserService {
     return { users, pagination };
   }
 
-  async sendReferralInvite(userObjectId: Types.ObjectId, email: string): Promise<{ message: string; email: string }> {
+  async sendReferralInvite(userObjectId: Types.ObjectId, email: string, referralLink: string): Promise<{ message: string; email: string }> {
     const user = await User.findById(userObjectId).select('name userId email');
     if (!user) throw ApiError.notFound('User not found');
 
@@ -223,7 +223,7 @@ class UserService {
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) throw ApiError.conflict('This email is already registered');
 
-    await sendReferralEmail(email, user.name, user.userId);
+    await sendReferralEmail(email, user.name, referralLink);
 
     return {
       message: `Referral invite sent to ${email}`,

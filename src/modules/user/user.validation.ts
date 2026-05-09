@@ -38,5 +38,9 @@ export const sendReferral: ValidationSchema = {
       'string.email': 'Please provide a valid email',
       'any.required': 'Email is required',
     }),
+    referralLink: Joi.string().uri().trim().required().messages({
+      'string.uri': 'Please provide a valid URL',
+      'any.required': 'Referral link is required',
+    }),
   }),
 };
