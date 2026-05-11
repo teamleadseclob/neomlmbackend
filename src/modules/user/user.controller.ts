@@ -9,6 +9,11 @@ export const getDashboard = catchAsync(async (req, res: Response) => {
   return ApiResponse.success(res, 'Dashboard retrieved', result);
 });
 
+export const getEarningLimits = catchAsync(async (req, res: Response) => {
+  const result = await userService.getEarningLimits((req as AuthRequest).user._id);
+  return ApiResponse.success(res, 'Earning limits retrieved', result);
+});
+
 export const getProfile = catchAsync(async (req, res: Response) => {
   const user = await userService.getProfile((req as AuthRequest).user._id);
   return ApiResponse.success(res, 'Profile retrieved successfully', user);

@@ -10,6 +10,7 @@ router.use(auth as any);
 
 router.get('/dashboard', userController.getDashboard);
 router.get('/me', userController.getProfile);
+router.get('/me/earning-limits', userController.getEarningLimits);
 router.get('/me/income-chart', validate(userValidation.incomeChart), userController.getIncomeChart);
 router.patch('/me', validate(userValidation.updateProfile), userController.updateProfile);
 router.get('/referrals', userController.getDirectReferrals);

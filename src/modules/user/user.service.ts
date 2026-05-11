@@ -14,7 +14,52 @@ import { sendReferralEmail } from '../../utils/email';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const CAP_MULTIPLIER = 2;
+
 class UserService {
+  async getEarningLimits(userObjectId: Types.ObjectId) {
+    const user = await User.findById(userObjectId).select(
+      'totalInvested maxInvestmentLimit totalRoiEarned totalMultiLevelEarned',
+    );
+    if (!user) throw ApiError.notFound('User not found');
+
+    const roiCap = user.totalInvested * CAP_MULTIPLIER;
+    const mlrCap = user.totalInvested * CAP_MULTIPLIER;
+    const isRoiCapReached = user.totalRoiEarned >= roiCap;
+    const isMlrCapReached = user.totalMultiLevelEarned >= mlrCap;
+
+    return {
+      investment: {
+        limit: user.maxInvestmentLimit,
+        invested: user.totalInvested,
+      },
+      roi: {
+        capMultiplier: '2x',
+        limit: roiCap,
+        earned: user.totalRoiEarned,
+        remaining: Math.round(Math.max(roiCap - user.totalRoiEarned, 0) * 100) / 100,
+        isCapReached: isRoiCapReached,
+      },
+      mlr: {
+        capMultiplier: '2x',
+        limit: mlrCap,
+        earned: user.totalMultiLevelEarned,
+        remaining: Math.round(Math.max(mlrCap - user.totalMultiLevelEarned, 0) * 100) / 100,
+        isCapReached: isMlrCapReached,
+        isBlocked: isRoiCapReached,
+        blockedReason: isRoiCapReached ? 'ROI cap reached — all earnings stopped' : null,
+      },
+      overall: {
+        capMultiplier: '4x',
+        limit: roiCap + mlrCap,
+        earned: Math.round((user.totalRoiEarned + user.totalMultiLevelEarned) * 100) / 100,
+        remaining: Math.round(
+          (Math.max(roiCap - user.totalRoiEarned, 0) + Math.max(mlrCap - user.totalMultiLevelEarned, 0)) * 100,
+        ) / 100,
+      },
+    };
+  }
+
   async getProfile(userId: Types.ObjectId): Promise<IUser> {
     const user = await userRepository.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
