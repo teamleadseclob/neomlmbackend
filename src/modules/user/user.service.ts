@@ -66,16 +66,14 @@ class UserService {
     return user;
   }
 
-  async updateProfile(userId: Types.ObjectId, updateData: { name?: string }): Promise<IUser> {
-    const allowedFields: Record<string, unknown> = {};
-    if (updateData.name !== undefined) allowedFields.name = updateData.name;
-
-    if (Object.keys(allowedFields).length === 0) {
-      throw ApiError.badRequest('No valid fields to update');
-    }
-
-    const user = await userRepository.findByIdAndUpdate(userId, allowedFields);
+  async updateProfile(userId: Types.ObjectId, updateData: { name?: string; password?: string }): Promise<IUser> {
+    const user = await User.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
+
+    if (updateData.name) user.name = updateData.name;
+    if (updateData.password) user.password = updateData.password;
+
+    await user.save();
     return user;
   }
 

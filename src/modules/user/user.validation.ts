@@ -7,6 +7,12 @@ export const updateProfile: ValidationSchema = {
       'string.min': 'Name must be at least 2 characters',
       'string.max': 'Name cannot exceed 100 characters',
     }),
+    password: Joi.string().min(6).max(128).optional().messages({
+      'string.min': 'Password must be at least 6 characters',
+      'string.max': 'Password cannot exceed 128 characters',
+    }),
+  }).min(1).messages({
+    'object.min': 'At least one field must be provided',
   }),
 };
 
