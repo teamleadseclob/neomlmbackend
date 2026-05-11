@@ -96,6 +96,11 @@ class UserService {
     );
     if (!user) throw ApiError.notFound('User not found');
 
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const monthMatch = { $gte: monthStart, $lte: monthEnd };
+
     const [
       directReferrals,
       totalDownline,
@@ -105,6 +110,8 @@ class UserService {
       mlrAgg,
       rankRewardAgg,
       rankBonusAgg,
+      roiMonthlyAgg,
+      mlrMonthlyAgg,
     ] = await Promise.all([
       User.countDocuments({ sponsorId: user.userId }),
       this.countDownline(userObjectId),
@@ -129,11 +136,22 @@ class UserService {
         { $match: { userId: userObjectId } },
         { $group: { _id: null, gross: { $sum: '$grossAmount' }, cutoff: { $sum: '$cutoffAmount' }, net: { $sum: '$netAmount' } } },
       ]),
+      RoiHistory.aggregate([
+        { $match: { userId: userObjectId, createdAt: monthMatch } },
+        { $group: { _id: null, gross: { $sum: '$roiEarned' } } },
+      ]),
+      MultiLevelReward.aggregate([
+        { $match: { earnerId: userObjectId, createdAt: monthMatch } },
+        { $group: { _id: null, gross: { $sum: '$grossAmount' }, cutoff: { $sum: '$cutoffAmount' }, net: { $sum: '$netAmount' } } },
+      ]),
     ]);
 
-    const roi = { gross: roiAgg[0]?.gross ?? 0, cutoff: 0, net: roiAgg[0]?.gross ?? 0 };
+    const roiMonthly = roiMonthlyAgg[0]?.gross ?? 0;
+    const mlrMonthly = { gross: mlrMonthlyAgg[0]?.gross ?? 0, cutoff: mlrMonthlyAgg[0]?.cutoff ?? 0, net: mlrMonthlyAgg[0]?.net ?? 0 };
+
+    const roi = { gross: roiAgg[0]?.gross ?? 0, cutoff: 0, net: roiAgg[0]?.gross ?? 0, thisMonth: Math.round(roiMonthly * 100) / 100 };
     const commissions = { gross: commissionAgg[0]?.gross ?? 0, cutoff: commissionAgg[0]?.cutoff ?? 0, net: commissionAgg[0]?.net ?? 0 };
-    const multiLevelRewards = { gross: mlrAgg[0]?.gross ?? 0, cutoff: mlrAgg[0]?.cutoff ?? 0, net: mlrAgg[0]?.net ?? 0 };
+    const multiLevelRewards = { gross: mlrAgg[0]?.gross ?? 0, cutoff: mlrAgg[0]?.cutoff ?? 0, net: mlrAgg[0]?.net ?? 0, thisMonth: Math.round(mlrMonthly.net * 100) / 100 };
     const rankRewards = { gross: rankRewardAgg[0]?.gross ?? 0, cutoff: rankRewardAgg[0]?.cutoff ?? 0, net: rankRewardAgg[0]?.net ?? 0 };
     const rankBonus = { gross: rankBonusAgg[0]?.gross ?? 0, cutoff: rankBonusAgg[0]?.cutoff ?? 0, net: rankBonusAgg[0]?.net ?? 0 };
 
