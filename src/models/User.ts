@@ -92,11 +92,6 @@ const userSchema = new Schema<IUser>(
       default: 0,
       min: 0,
     },
-    availableBalance: {
-      type: Number,
-      default: 0,
-      min: [0, 'Available balance cannot be negative'],
-    },
     withdrawnAmount: {
       type: Number,
       default: 0,
@@ -109,6 +104,15 @@ const userSchema = new Schema<IUser>(
     isBlocked: {
       type: Boolean,
       default: false,
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      default: null,
+      select: false,
     },
   },
   {

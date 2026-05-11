@@ -20,10 +20,11 @@ export interface IUser extends Document {
   totalGrossEarnings: number;
   totalCutoffDeducted: number;
   totalEarnings: number;
-  availableBalance: number;
   withdrawnAmount: number;
   lastWithdrawalDate: Date | null;
   isBlocked: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorSecret: string | null;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -139,6 +140,7 @@ export interface RegisterInput {
 export interface LoginInput {
   userId: string;
   password: string;
+  totpCode?: string;
 }
 
 export interface AuthResult {

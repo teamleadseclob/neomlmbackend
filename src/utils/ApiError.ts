@@ -3,11 +3,13 @@ import { StatusCodes } from 'http-status-codes';
 class ApiError extends Error {
   statusCode: number;
   isOperational: boolean;
+  data: Record<string, unknown> | null;
 
-  constructor(statusCode: number, message: string, isOperational = true, stack = '') {
+  constructor(statusCode: number, message: string, isOperational = true, stack = '', data: Record<string, unknown> | null = null) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
+    this.data = data;
 
     if (stack) {
       this.stack = stack;
@@ -16,8 +18,8 @@ class ApiError extends Error {
     }
   }
 
-  static badRequest(message: string): ApiError {
-    return new ApiError(StatusCodes.BAD_REQUEST, message);
+  static badRequest(message: string, data?: Record<string, unknown>): ApiError {
+    return new ApiError(StatusCodes.BAD_REQUEST, message, true, '', data || null);
   }
 
   static unauthorized(message = 'Unauthorized'): ApiError {

@@ -61,19 +61,18 @@ class WithdrawalService {
     if (!user) throw ApiError.notFound('User not found');
     if (user.isBlocked) throw ApiError.forbidden('Account is blocked');
 
-    if (user.availableBalance < amount) {
-      throw ApiError.badRequest(`Insufficient balance. Available: $${user.availableBalance}`);
+    if (user.walletBalance < amount) {
+      throw ApiError.badRequest(`Insufficient balance. Available: $${user.walletBalance}`);
     }
 
-    // Reject contract addresses
+    // Reject contract addresses (skip if RPC unavailable)
     try {
       if (await isContractAddress(walletAddress)) {
         throw ApiError.badRequest('Contract addresses not allowed. Please use a personal wallet.');
       }
     } catch (err: any) {
       if (err instanceof ApiError) throw err;
-      logger.error({ error: err.message }, 'Address validation failed');
-      throw ApiError.badRequest('Wallet address validation failed');
+      logger.warn({ error: err.message }, 'Address validation skipped - RPC unavailable');
     }
 
     // Lock balance atomically
@@ -81,12 +80,12 @@ class WithdrawalService {
     try {
       session.startTransaction();
 
-      const balanceBefore = user.availableBalance;
+      const balanceBefore = user.walletBalance;
       const balanceAfter = balanceBefore - amount;
 
       await User.findByIdAndUpdate(
         userId,
-        { $inc: { availableBalance: -amount } },
+        { $inc: { walletBalance: -amount } },
         { session },
       );
 
@@ -261,7 +260,7 @@ class WithdrawalService {
       // Refund locked balance
       await User.findByIdAndUpdate(
         transaction.userId,
-        { $inc: { availableBalance: transaction.amount } },
+        { $inc: { walletBalance: transaction.amount } },
         { session },
       );
 
@@ -413,7 +412,7 @@ class WithdrawalService {
 
       await User.findByIdAndUpdate(
         transaction.userId,
-        { $inc: { availableBalance: transaction.amount } },
+        { $inc: { walletBalance: transaction.amount } },
         { session },
       );
 

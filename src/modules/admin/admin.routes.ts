@@ -18,6 +18,7 @@ router.get('/revenue-chart', validate(adminValidation.revenueChart), adminContro
 
 // Users
 router.get('/users', validate(adminValidation.getUsers), adminController.getUsers);
+router.get('/users/join-chart', adminController.getUserJoinChart);
 router.patch('/users/:id/block', validate(adminValidation.userIdParam), adminController.blockUser);
 router.patch('/users/:id/unblock', validate(adminValidation.userIdParam), adminController.unblockUser);
 router.post('/users/:id/grant-swp', validate(adminValidation.adminGrantSwp), adminController.grantSwp);
@@ -29,6 +30,7 @@ router.get('/network/stats', adminController.getNetworkStats);
 router.get('/roi-config', adminController.getRoiConfig);
 router.patch('/roi-config', validate(adminValidation.updateRoiConfig), adminController.updateRoiConfig);
 router.post('/roi/distribute', adminController.distributeRoi);
+router.get('/roi/distributions', adminController.getRoiDistributionHistory);
 
 // Multi-Level Reward Config
 router.get('/multilevel-rewards/config', adminController.getMultiLevelRewardConfigs);
@@ -46,5 +48,8 @@ router.delete('/events/:id', validate(eventValidation.eventIdParam), eventContro
 
 // Transactions
 router.get('/transactions', validate(adminValidation.getTransactions), adminController.getTransactions);
+
+// 2FA Management
+router.patch('/users/:id/disable-2fa', validate(adminValidation.userIdParam), adminController.adminDisable2FA);
 
 export default router;

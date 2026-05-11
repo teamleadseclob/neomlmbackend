@@ -42,6 +42,7 @@ const errorHandler = (err: MongoError, _req: Request, res: Response, _next: Next
     success: false,
     statusCode,
     message,
+    ...((error as ApiError).data && { data: (error as ApiError).data }),
     ...(env.isDevelopment() && { stack: error.stack }),
   });
 };

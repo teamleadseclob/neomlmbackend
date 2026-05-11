@@ -11,6 +11,7 @@ import MultiLevelRewardConfig from '../../models/MultiLevelRewardConfig';
 import MultiLevelReward from '../../models/MultiLevelReward';
 import logger from '../../config/logger';
 import { creditWithoutCutoff, creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
+import RoiDistribution from '../../models/RoiDistribution';
 
 const CAP_MULTIPLIER = 2; // 200% cap for both ROI and MLR
 
@@ -34,7 +35,7 @@ interface UserRoiBreakdown {
 }
 
 class RoiService {
-  async distributeAll(): Promise<DistributionResult> {
+  async distributeAll(adminId: Types.ObjectId): Promise<DistributionResult> {
     const config = await RoiConfig.findOne({});
     if (!config) throw ApiError.badRequest('ROI config not found. Please set up ROI config first.');
     if (config.dailyRoiPercentage <= 0) throw ApiError.badRequest('Daily ROI percentage is 0. Update ROI config before distributing.');
@@ -193,7 +194,7 @@ class RoiService {
       'ROI + Multi-Level Rewards distribution completed',
     );
 
-    return {
+    const result: DistributionResult = {
       batchId,
       totalUsersProcessed,
       totalUsersEarned,
@@ -204,6 +205,10 @@ class RoiService {
       roiPercentage: config.dailyRoiPercentage,
       distributedAt: now,
     };
+
+    await RoiDistribution.create({ ...result, distributedBy: adminId });
+
+    return result;
   }
 
   /**

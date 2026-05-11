@@ -51,5 +51,32 @@ export const login: ValidationSchema = {
     password: Joi.string().required().messages({
       'any.required': 'Password is required',
     }),
+    totpCode: Joi.string().length(6).pattern(/^\d+$/).optional().messages({
+      'string.length': 'TOTP code must be 6 digits',
+      'string.pattern.base': 'TOTP code must contain only digits',
+    }),
+  }),
+};
+
+export const enable2FA: ValidationSchema = {
+  body: Joi.object({
+    totpCode: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+      'string.length': 'TOTP code must be 6 digits',
+      'string.pattern.base': 'TOTP code must contain only digits',
+      'any.required': 'TOTP code is required',
+    }),
+  }),
+};
+
+export const disable2FA: ValidationSchema = {
+  body: Joi.object({
+    password: Joi.string().required().messages({
+      'any.required': 'Password is required',
+    }),
+    totpCode: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+      'string.length': 'TOTP code must be 6 digits',
+      'string.pattern.base': 'TOTP code must contain only digits',
+      'any.required': 'TOTP code is required',
+    }),
   }),
 };

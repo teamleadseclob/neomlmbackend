@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
+import * as OTPAuth from 'otpauth';
 import ApiError from '../../utils/ApiError';
 import { generateUserId } from '../../utils/helpers';
 import { generateOtp, sendOtpEmail } from '../../utils/email';
@@ -8,6 +9,7 @@ import env from '../../config/env';
 import authRepository from './auth.repository';
 import Network from '../../models/Network';
 import PendingRegistration from '../../models/PendingRegistration';
+import User from '../../models/User';
 import { RegisterInput, LoginInput, AuthResult } from '../../types';
 
 const MAX_OTP_ATTEMPTS = 5;
@@ -163,13 +165,33 @@ class AuthService {
     };
   }
 
-  async login({ userId, password }: LoginInput): Promise<AuthResult> {
+  async login({ userId, password, totpCode }: LoginInput): Promise<AuthResult> {
     const user = await authRepository.findByUserIdWithPassword(userId);
     if (!user) throw ApiError.unauthorized('Invalid referral ID or password');
     if (user.isBlocked) throw ApiError.forbidden('Your account has been blocked. Contact admin.');
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) throw ApiError.unauthorized('Invalid referral ID or password');
+
+    // Check 2FA
+    if (user.twoFactorEnabled) {
+      if (!totpCode) throw ApiError.badRequest('2FA code is required', { twoFactorRequired: true });
+
+      const fullUser = await User.findById(user._id).select('+twoFactorSecret').lean();
+      if (!fullUser?.twoFactorSecret) throw ApiError.internal('2FA secret not found');
+
+      const totp = new OTPAuth.TOTP({
+        issuer: 'NEO MLM',
+        label: user.userId,
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret: OTPAuth.Secret.fromBase32(fullUser.twoFactorSecret),
+      });
+
+      const delta = totp.validate({ token: totpCode, window: 1 });
+      if (delta === null) throw ApiError.unauthorized('Invalid 2FA code');
+    }
 
     const token = this.generateToken(user._id);
 
@@ -183,6 +205,88 @@ class AuthService {
       },
       token,
     };
+  }
+
+  // ─── 2FA Methods ───
+
+  async generate2FA(userObjectId: Types.ObjectId): Promise<{ qrCode: string; secret: string }> {
+    const user = await User.findById(userObjectId);
+    if (!user) throw ApiError.notFound('User not found');
+    if (user.twoFactorEnabled) throw ApiError.conflict('2FA is already enabled');
+
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      issuer: 'NEO MLM',
+      label: user.userId,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+
+    const otpauthUrl = totp.toString();
+
+    // Store secret temporarily (not enabled yet)
+    await User.findByIdAndUpdate(userObjectId, { twoFactorSecret: secret.base32 });
+
+    const QRCode = await import('qrcode');
+    const qrCode = await QRCode.toDataURL(otpauthUrl);
+
+    return { qrCode, secret: secret.base32 };
+  }
+
+  async enable2FA(userObjectId: Types.ObjectId, totpCode: string): Promise<{ message: string }> {
+    const user = await User.findById(userObjectId).select('+twoFactorSecret');
+    if (!user) throw ApiError.notFound('User not found');
+    if (user.twoFactorEnabled) throw ApiError.conflict('2FA is already enabled');
+    if (!user.twoFactorSecret) throw ApiError.badRequest('Please generate 2FA secret first');
+
+    const totp = new OTPAuth.TOTP({
+      issuer: 'NEO MLM',
+      label: user.userId,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: OTPAuth.Secret.fromBase32(user.twoFactorSecret),
+    });
+
+    const delta = totp.validate({ token: totpCode, window: 1 });
+    if (delta === null) throw ApiError.badRequest('Invalid 2FA code. Please try again.');
+
+    await User.findByIdAndUpdate(userObjectId, { twoFactorEnabled: true });
+
+    return { message: '2FA enabled successfully' };
+  }
+
+  async disable2FA(userObjectId: Types.ObjectId, password: string, totpCode: string): Promise<{ message: string }> {
+    const user = await User.findById(userObjectId).select('+password +twoFactorSecret');
+    if (!user) throw ApiError.notFound('User not found');
+    if (!user.twoFactorEnabled) throw ApiError.conflict('2FA is not enabled');
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) throw ApiError.unauthorized('Invalid password');
+
+    const totp = new OTPAuth.TOTP({
+      issuer: 'NEO MLM',
+      label: user.userId,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: OTPAuth.Secret.fromBase32(user.twoFactorSecret!),
+    });
+
+    const delta = totp.validate({ token: totpCode, window: 1 });
+    if (delta === null) throw ApiError.unauthorized('Invalid 2FA code');
+
+    await User.findByIdAndUpdate(userObjectId, { twoFactorEnabled: false, twoFactorSecret: null });
+
+    return { message: '2FA disabled successfully' };
+  }
+
+  async get2FAStatus(userObjectId: Types.ObjectId): Promise<{ twoFactorEnabled: boolean }> {
+    const user = await User.findById(userObjectId).select('twoFactorEnabled');
+    if (!user) throw ApiError.notFound('User not found');
+    return { twoFactorEnabled: user.twoFactorEnabled };
   }
 
   private generateToken(userId: Types.ObjectId): string {

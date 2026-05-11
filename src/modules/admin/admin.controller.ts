@@ -3,6 +3,7 @@ import catchAsync from '../../utils/catchAsync';
 import ApiResponse from '../../utils/ApiResponse';
 import adminService from './admin.service';
 import roiService from '../roi/roi.service';
+import { AuthRequest } from '../../types';
 
 export const getDashboard = catchAsync(async (_req: Request, res: Response) => {
   const result = await adminService.getDashboard();
@@ -44,8 +45,8 @@ export const updateRoiConfig = catchAsync(async (req: Request, res: Response) =>
   return ApiResponse.success(res, 'ROI config updated successfully', config);
 });
 
-export const distributeRoi = catchAsync(async (_req: Request, res: Response) => {
-  const result = await roiService.distributeAll();
+export const distributeRoi = catchAsync(async (req: Request, res: Response) => {
+  const result = await roiService.distributeAll((req as AuthRequest).user._id);
   return ApiResponse.success(res, 'ROI distributed successfully', result);
 });
 
@@ -83,4 +84,23 @@ export const updateLevelCommission = catchAsync(async (req: Request, res: Respon
 export const getTransactions = catchAsync(async (req: Request, res: Response) => {
   const { transactions, pagination } = await adminService.getTransactions(req.query);
   return ApiResponse.paginated(res, 'Transactions retrieved successfully', transactions, pagination);
+});
+
+// 2FA
+export const adminDisable2FA = catchAsync(async (req: Request, res: Response) => {
+  await adminService.adminDisable2FA(req.params.id as string);
+  return ApiResponse.success(res, '2FA disabled for user successfully');
+});
+
+// User Join Chart
+export const getUserJoinChart = catchAsync(async (req: Request, res: Response) => {
+  const days = parseInt(req.query.days as string, 10) || 30;
+  const result = await adminService.getUserJoinChart(days);
+  return ApiResponse.success(res, 'User join chart retrieved', result);
+});
+
+// ROI Distribution History
+export const getRoiDistributionHistory = catchAsync(async (req: Request, res: Response) => {
+  const { distributions, pagination } = await adminService.getRoiDistributionHistory(req.query as any);
+  return ApiResponse.paginated(res, 'ROI distribution history retrieved', distributions, pagination);
 });

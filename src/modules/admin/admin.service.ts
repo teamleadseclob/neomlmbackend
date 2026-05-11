@@ -12,6 +12,7 @@ import MultiLevelReward from '../../models/MultiLevelReward';
 import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import Transaction from '../../models/Transaction';
+import RoiDistribution from '../../models/RoiDistribution';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -116,7 +117,7 @@ class AdminService {
 
   async getNetworkStats(): Promise<NetworkStats> {
     return networkService.getNetworkStats();
-  }
+  } 
 
   async grantSwp(id: string, amount: number) {
     const user = await adminRepository.findUserById(id);
@@ -374,6 +375,68 @@ class AdminService {
       transactions,
       pagination: { page, limit, totalDocs, totalPages, skip },
     };
+  }
+
+  // 2FA
+  async adminDisable2FA(id: string): Promise<void> {
+    const user = await adminRepository.findUserById(id);
+    if (!user) throw ApiError.notFound('User not found');
+    if (!user.twoFactorEnabled) throw ApiError.conflict('2FA is not enabled for this user');
+    await User.findByIdAndUpdate(id, { twoFactorEnabled: false, twoFactorSecret: null });
+  }
+
+  async getRoiDistributionHistory(query: { page?: string; limit?: string }) {
+    const page = parseInt(query.page || '1', 10);
+    const limit = parseInt(query.limit || '20', 10);
+    const skip = (page - 1) * limit;
+
+    const [distributions, totalDocs] = await Promise.all([
+      RoiDistribution.find()
+        .populate('distributedBy', 'name userId')
+        .sort({ distributedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      RoiDistribution.countDocuments(),
+    ]);
+
+    return {
+      distributions,
+      pagination: { page, limit, totalDocs, totalPages: Math.ceil(totalDocs / limit), skip },
+    };
+  }
+
+  async getUserJoinChart(days: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (days - 1));
+    startDate.setHours(0, 0, 0, 0);
+
+    const agg = await User.aggregate([
+      { $match: { role: { $ne: 'admin' }, createdAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const countMap: Record<string, number> = {};
+    for (const entry of agg) countMap[entry._id] = entry.count;
+
+    const dailyData = [];
+    let totalJoined = 0;
+    const cursor = new Date(startDate);
+
+    for (let i = 0; i < days; i++) {
+      const dateStr = cursor.toISOString().split('T')[0];
+      const count = countMap[dateStr] || 0;
+      totalJoined += count;
+      dailyData.push({ date: dateStr, count });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return { days, totalJoined, dailyData };
   }
 }
 
