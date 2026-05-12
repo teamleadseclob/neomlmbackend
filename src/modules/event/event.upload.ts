@@ -1,6 +1,17 @@
 import multer from 'multer';
-import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE } from '../../models/Event';
 import ApiError from '../../utils/ApiError';
+
+const ALLOWED_MEDIA_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'video/mp4',
+  'video/webm',
+];
+
+const MAX_MEDIA_SIZE = 5 * 1024 * 1024; // 5MB
 
 const storage = multer.memoryStorage();
 
