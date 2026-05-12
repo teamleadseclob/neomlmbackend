@@ -56,12 +56,14 @@ export const bulkApprove = catchAsync(async (req, res: Response) => {
 
 export const adminListWithdrawals = catchAsync(async (req, res: Response) => {
   const result = await withdrawalService.adminListWithdrawals(req.query as any);
-  return ApiResponse.paginated(
-    res,
-    'Withdrawals retrieved',
-    result.transactions as any,
-    result.pagination,
-  );
+  return res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: 'Withdrawals retrieved',
+    summary: result.summary,
+    data: result.transactions,
+    pagination: result.pagination,
+  });
 });
 
 export const retryWithdrawal = catchAsync(async (req, res: Response) => {

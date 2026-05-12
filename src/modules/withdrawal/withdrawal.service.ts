@@ -463,7 +463,12 @@ class WithdrawalService {
       if (query.endDate) (filter.createdAt as Record<string, Date>).$lte = new Date(query.endDate);
     }
 
-    const [transactions, totalDocs] = await Promise.all([
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const summaryFilter = { type: TRANSACTION_TYPES.WITHDRAWAL };
+
+    const [transactions, totalDocs, summaryAgg, todayAgg] = await Promise.all([
       Transaction.find(filter)
         .populate('userId', 'name email userId')
         .populate('approvedBy', 'name userId')
@@ -472,9 +477,51 @@ class WithdrawalService {
         .skip(skip)
         .limit(limit),
       Transaction.countDocuments(filter),
+      Transaction.aggregate([
+        { $match: summaryFilter },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+            totalAmount: { $sum: '$amount' },
+          },
+        },
+      ]),
+      Transaction.aggregate([
+        { $match: { ...summaryFilter, createdAt: { $gte: todayStart } } },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+            totalAmount: { $sum: '$amount' },
+          },
+        },
+      ]),
     ]);
 
+    const statusMap = (agg: { _id: string; count: number; totalAmount: number }[]) => {
+      const map: Record<string, { count: number; totalAmount: number }> = {};
+      for (const item of agg) map[item._id] = { count: item.count, totalAmount: item.totalAmount };
+      return map;
+    };
+
+    const sm = statusMap(summaryAgg);
+    const tm = statusMap(todayAgg);
+
+    const summary = {
+      totalRequests: Object.values(sm).reduce((s, v) => s + v.count, 0),
+      totalApproved: sm[TRANSACTION_STATUS.COMPLETED]?.count ?? 0,
+      totalPending: sm[TRANSACTION_STATUS.PENDING]?.count ?? 0,
+      totalRejected: sm[TRANSACTION_STATUS.REJECTED]?.count ?? 0,
+      totalAmountApproved: sm[TRANSACTION_STATUS.COMPLETED]?.totalAmount ?? 0,
+      totalAmountPending: sm[TRANSACTION_STATUS.PENDING]?.totalAmount ?? 0,
+      totalAmountRejected: sm[TRANSACTION_STATUS.REJECTED]?.totalAmount ?? 0,
+      todayApproved: tm[TRANSACTION_STATUS.COMPLETED]?.count ?? 0,
+      todayPending: tm[TRANSACTION_STATUS.PENDING]?.count ?? 0,
+    };
+
     return {
+      summary,
       transactions,
       pagination: {
         page,

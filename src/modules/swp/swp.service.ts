@@ -8,6 +8,7 @@ import Commission from '../../models/Commission';
 import TeamStats from '../../models/TeamStats';
 import rankService from '../rank/rank.service';
 import { creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
+import { creditFunds } from '../../models/SystemFund';
 
 class SwpService {
   async purchase(userId: Types.ObjectId, amount: number) {
@@ -42,6 +43,9 @@ class SwpService {
       swpBefore,
       swpAfter,
     });
+
+    // Credit system funds (pool 2%, management 3%, operation 5%)
+    await creditFunds(amount);
 
     // Distribute commissions to upline
     await this.distributeCommissions(user._id, purchase._id, amount);

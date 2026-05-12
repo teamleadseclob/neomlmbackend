@@ -13,6 +13,7 @@ import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import Transaction from '../../models/Transaction';
 import RoiDistribution from '../../models/RoiDistribution';
+import { getSystemFund } from '../../models/SystemFund';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -87,6 +88,7 @@ class AdminService {
       mlrTodayAgg,
       rankAgg,
       rankTodayAgg,
+      withdrawalAgg,
     ] = await Promise.all([
       User.countDocuments({ role: { $ne: 'admin' } }),
       User.countDocuments({ role: { $ne: 'admin' }, ...todayFilter }),
@@ -102,7 +104,16 @@ class AdminService {
       MultiLevelReward.aggregate([{ $match: todayFilter }, { $group: { _id: null, total: { $sum: '$rewardAmount' } } }]),
       RankReward.aggregate([{ $group: { _id: null, total: { $sum: '$reward' } } }]),
       RankReward.aggregate([{ $match: todayFilter }, { $group: { _id: null, total: { $sum: '$reward' } } }]),
+      Transaction.aggregate([
+        { $match: { type: 'withdrawal' } },
+        { $group: { _id: '$status', total: { $sum: '$amount' } } },
+      ]),
     ]);
+
+    const withdrawalMap: Record<string, number> = {};
+    for (const entry of withdrawalAgg) withdrawalMap[entry._id] = entry.total;
+
+    const systemFund = await getSystemFund();
 
     return {
       totalUsers: { total: totalUsers, today: todayUsers },
@@ -112,6 +123,11 @@ class AdminService {
       totalRoiDistributed: { total: roiAgg[0]?.total ?? 0, today: roiTodayAgg[0]?.total ?? 0 },
       totalMultiLevelReward: { total: mlrAgg[0]?.total ?? 0, today: mlrTodayAgg[0]?.total ?? 0 },
       totalRankIncome: { total: rankAgg[0]?.total ?? 0, today: rankTodayAgg[0]?.total ?? 0 },
+      totalPendingWithdrawal: withdrawalMap['pending'] ?? 0,
+      totalPaidWithdrawal: withdrawalMap['completed'] ?? 0,
+      poolFund: systemFund.poolFund,
+      managementFund: systemFund.managementFund,
+      operationWalletFund: systemFund.operationWalletFund,
     };
   }
 

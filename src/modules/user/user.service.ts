@@ -60,10 +60,17 @@ class UserService {
     };
   }
 
-  async getProfile(userId: Types.ObjectId): Promise<IUser> {
+  async getProfile(userId: Types.ObjectId) {
     const user = await userRepository.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
-    return user;
+
+    const [agg] = await Commission.aggregate([
+      { $match: { earnerId: userId, level: 1 } },
+      { $group: { _id: null, total: { $sum: '$netAmount' } } },
+    ]);
+
+    const userObj = user.toJSON ? user.toJSON() : user;
+    return { ...userObj, directReferralEarnings: agg?.total ?? 0 };
   }
 
   async updateProfile(userId: Types.ObjectId, updateData: { name?: string; password?: string }): Promise<IUser> {
