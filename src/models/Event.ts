@@ -1,12 +1,14 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 
+export const EVENT_TYPES = ['contest', 'learning_package', 'tools'] as const;
+export type EventType = typeof EVENT_TYPES[number];
+
 export interface IEvent extends Document {
   _id: Types.ObjectId;
   title: string;
   description: string;
-  mediaData: Buffer;
-  mediaType: string;
-  mediaSize: number;
+  type: EventType;
+  mediaUrl: string;
   expiresAt: Date;
   isActive: boolean;
   createdBy: Types.ObjectId;
@@ -28,17 +30,16 @@ const eventSchema = new Schema<IEvent>(
       trim: true,
       maxlength: [2000, 'Description cannot exceed 2000 characters'],
     },
-    mediaData: {
-      type: Buffer,
-      required: [true, 'Media file is required'],
-    },
-    mediaType: {
+    type: {
       type: String,
-      required: true,
+      enum: EVENT_TYPES,
+      required: [true, 'Event type is required'],
+      index: true,
     },
-    mediaSize: {
-      type: Number,
-      required: true,
+    mediaUrl: {
+      type: String,
+      required: [true, 'Media URL is required'],
+      trim: true,
     },
     expiresAt: {
       type: Date,
@@ -58,7 +59,6 @@ const eventSchema = new Schema<IEvent>(
     timestamps: true,
     toJSON: {
       transform(_doc, ret: Record<string, unknown>) {
-        delete ret.mediaData;
         delete ret.__v;
         return ret;
       },
@@ -66,21 +66,8 @@ const eventSchema = new Schema<IEvent>(
   },
 );
 
-// TTL — auto-delete expired events
 eventSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-eventSchema.index({ isActive: 1, expiresAt: 1 });
-
-export const ALLOWED_MEDIA_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'video/mp4',
-  'video/webm',
-];
-
-export const MAX_MEDIA_SIZE = 5 * 1024 * 1024; // 5MB
+eventSchema.index({ isActive: 1, type: 1, expiresAt: 1 });
 
 const Event: Model<IEvent> = mongoose.model<IEvent>('Event', eventSchema);
 

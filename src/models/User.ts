@@ -114,6 +114,39 @@ const userSchema = new Schema<IUser>(
       default: null,
       select: false,
     },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      default: null,
+    },
+    country: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: null,
+    },
+    state: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: null,
+    },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      maxlength: 20,
+      default: null,
+    },
+    address: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: null,
+    },
+    dob: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -1,29 +1,14 @@
 import { Types } from 'mongoose';
 import ApiError from '../../utils/ApiError';
-import Event from '../../models/Event';
-
-interface EventResponse {
-  _id: Types.ObjectId;
-  title: string;
-  description: string;
-  mediaUrl: string;
-  mediaType: string;
-  mediaSize: number;
-  expiresAt: Date;
-  isActive: boolean;
-  createdBy: Types.ObjectId;
-  createdAt: Date;
-  isExpired?: boolean;
-}
+import Event, { EventType } from '../../models/Event';
 
 class EventService {
   async create(data: {
     title: string;
     description: string;
+    type: EventType;
+    mediaUrl: string;
     expiryDays: number;
-    mediaBuffer: Buffer;
-    mediaType: string;
-    mediaSize: number;
     createdBy: Types.ObjectId;
   }) {
     const expiresAt = new Date();
@@ -32,92 +17,47 @@ class EventService {
     return Event.create({
       title: data.title,
       description: data.description,
-      mediaData: data.mediaBuffer,
-      mediaType: data.mediaType,
-      mediaSize: data.mediaSize,
+      type: data.type,
+      mediaUrl: data.mediaUrl,
       expiresAt,
       createdBy: data.createdBy,
     });
   }
 
-  async getActiveEvents(): Promise<EventResponse[]> {
-    const events = await Event.find({
+  async getActiveEvents(type?: string): Promise<any[]> {
+    const filter: Record<string, unknown> = {
       isActive: true,
       expiresAt: { $gt: new Date() },
-    })
-      .select('-mediaData')
-      .sort({ createdAt: -1 })
-      .lean();
+    };
+    if (type) filter.type = type;
 
-    return events.map((e) => ({
-      _id: e._id as Types.ObjectId,
-      title: e.title,
-      description: e.description,
-      mediaUrl: `/api/events/${e._id}/media`,
-      mediaType: e.mediaType,
-      mediaSize: e.mediaSize,
-      expiresAt: e.expiresAt,
-      isActive: e.isActive,
-      createdBy: e.createdBy,
-      createdAt: e.createdAt,
-    }));
+    return Event.find(filter).sort({ createdAt: -1 }).lean();
   }
 
-  async getAllEvents(): Promise<EventResponse[]> {
-    const events = await Event.find()
-      .select('-mediaData')
-      .sort({ createdAt: -1 })
-      .lean();
+  async getAllEvents(type?: string): Promise<any[]> {
+    const filter: Record<string, unknown> = {};
+    if (type) filter.type = type;
 
+    const events = await Event.find(filter).sort({ createdAt: -1 }).lean();
     return events.map((e) => ({
-      _id: e._id as Types.ObjectId,
-      title: e.title,
-      description: e.description,
-      mediaUrl: `/api/events/${e._id}/media`,
-      mediaType: e.mediaType,
-      mediaSize: e.mediaSize,
-      expiresAt: e.expiresAt,
-      isActive: e.isActive,
-      createdBy: e.createdBy,
-      createdAt: e.createdAt,
+      ...e,
       isExpired: new Date() > e.expiresAt,
     }));
   }
 
-  async getEventById(id: string): Promise<EventResponse> {
-    const e = await Event.findById(id).select('-mediaData').lean();
-    if (!e) throw ApiError.notFound('Event not found');
-
-    return {
-      _id: e._id as Types.ObjectId,
-      title: e.title,
-      description: e.description,
-      mediaUrl: `/api/events/${e._id}/media`,
-      mediaType: e.mediaType,
-      mediaSize: e.mediaSize,
-      expiresAt: e.expiresAt,
-      isActive: e.isActive,
-      createdBy: e.createdBy,
-      createdAt: e.createdAt,
-    };
-  }
-
-  async getEventMedia(id: string): Promise<{ data: Buffer; type: string }> {
-    const event = await Event.findById(id).select('mediaData mediaType');
+  async getEventById(id: string) {
+    const event = await Event.findById(id).lean();
     if (!event) throw ApiError.notFound('Event not found');
-
-    return {
-      data: event.mediaData,
-      type: event.mediaType,
-    };
+    return event;
   }
 
-  async update(id: string, data: { title?: string; description?: string; expiryDays?: number }) {
+  async update(id: string, data: { title?: string; description?: string; mediaUrl?: string; expiryDays?: number }) {
     const event = await Event.findById(id);
     if (!event) throw ApiError.notFound('Event not found');
 
     if (data.title) event.title = data.title;
     if (data.description) event.description = data.description;
+    if (data.mediaUrl) event.mediaUrl = data.mediaUrl;
     if (data.expiryDays) {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + data.expiryDays);

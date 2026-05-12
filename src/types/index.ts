@@ -25,6 +25,12 @@ export interface IUser extends Document {
   isBlocked: boolean;
   twoFactorEnabled: boolean;
   twoFactorSecret: string | null;
+  gender: 'male' | 'female' | 'other' | null;
+  country: string | null;
+  state: string | null;
+  phoneNumber: string | null;
+  address: string | null;
+  dob: Date | null;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;

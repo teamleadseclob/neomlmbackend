@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import * as adminController from './admin.controller';
 import * as eventController from '../event/event.controller';
-import { uploadMedia } from '../event/event.upload';
 import * as eventValidation from '../event/event.validation';
 import auth from '../../middlewares/auth';
 import authorize from '../../middlewares/authorize';
@@ -22,6 +21,7 @@ router.get('/users/join-chart', adminController.getUserJoinChart);
 router.patch('/users/:id/block', validate(adminValidation.userIdParam), adminController.blockUser);
 router.patch('/users/:id/unblock', validate(adminValidation.userIdParam), adminController.unblockUser);
 router.post('/users/:id/grant-swp', validate(adminValidation.adminGrantSwp), adminController.grantSwp);
+router.get('/swp-purchases/recent', adminController.getRecentSwpPurchases);
 
 // Network
 router.get('/network/stats', adminController.getNetworkStats);
@@ -41,7 +41,7 @@ router.get('/level-commissions', adminController.getLevelCommissions);
 router.patch('/level-commissions/:level', validate(adminValidation.updateLevelCommission), adminController.updateLevelCommission);
 
 // Events
-router.post('/events', uploadMedia, eventController.createEvent);
+router.post('/events', validate(eventValidation.createEvent), eventController.createEvent);
 router.get('/events', eventController.getAllEvents);
 router.patch('/events/:id', validate(eventValidation.updateEvent), eventController.updateEvent);
 router.delete('/events/:id', validate(eventValidation.eventIdParam), eventController.deleteEvent);

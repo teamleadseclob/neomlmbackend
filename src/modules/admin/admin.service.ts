@@ -421,6 +421,15 @@ class AdminService {
     };
   }
 
+  async getRecentSwpPurchases() {
+    const purchases = await SwpPurchase.find()
+      .populate('userId', 'name userId email')
+      .sort({ createdAt: -1 })
+      .limit(7)
+      .lean();
+    return purchases;
+  }
+
   async getUserJoinChart(days: number = 30) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - (days - 1));

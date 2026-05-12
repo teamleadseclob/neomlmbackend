@@ -7,6 +7,5 @@ const router = Router();
 
 router.get('/', eventController.getActiveEvents);
 router.get('/:id', validate(eventValidation.eventIdParam), eventController.getEventById);
-router.get('/:id/media', validate(eventValidation.eventIdParam), eventController.getEventMedia);
 
 export default router;

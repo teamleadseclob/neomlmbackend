@@ -11,6 +11,14 @@ export const updateProfile: ValidationSchema = {
       'string.min': 'Password must be at least 6 characters',
       'string.max': 'Password cannot exceed 128 characters',
     }),
+    gender: Joi.string().valid('male', 'female', 'other').optional(),
+    country: Joi.string().trim().max(100).optional(),
+    state: Joi.string().trim().max(100).optional(),
+    phoneNumber: Joi.string().trim().max(20).optional(),
+    address: Joi.string().trim().max(500).optional(),
+    dob: Joi.date().iso().max('now').optional().messages({
+      'date.max': 'Date of birth cannot be in the future',
+    }),
   }).min(1).messages({
     'object.min': 'At least one field must be provided',
   }),

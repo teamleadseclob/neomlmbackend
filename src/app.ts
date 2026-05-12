@@ -21,6 +21,7 @@ import { userRouter as withdrawalUserRoutes, adminRouter as withdrawalAdminRoute
 import walletRoutes from './modules/wallet/wallet.routes';
 import eventRoutes from './modules/event/event.routes';
 import { userRouter as supportUserRoutes, adminRouter as supportAdminRoutes } from './modules/support/support.routes';
+import reportRoutes from './modules/report/report.routes';
 
 const app = express();
 
@@ -67,6 +68,7 @@ app.use('/api/admin/wallet', walletRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/support', supportUserRoutes);
 app.use('/api/admin/support', supportAdminRoutes);
+app.use('/api/admin/reports', reportRoutes);
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
   next(ApiError.notFound(`Route ${req.originalUrl} not found`));

@@ -73,12 +73,27 @@ class UserService {
     return { ...userObj, directReferralEarnings: agg?.total ?? 0 };
   }
 
-  async updateProfile(userId: Types.ObjectId, updateData: { name?: string; password?: string }): Promise<IUser> {
+  async updateProfile(userId: Types.ObjectId, updateData: {
+    name?: string;
+    password?: string;
+    gender?: string;
+    country?: string;
+    state?: string;
+    phoneNumber?: string;
+    address?: string;
+    dob?: Date;
+  }): Promise<IUser> {
     const user = await User.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
 
     if (updateData.name) user.name = updateData.name;
     if (updateData.password) user.password = updateData.password;
+    if (updateData.gender !== undefined) user.gender = updateData.gender as any;
+    if (updateData.country !== undefined) user.country = updateData.country;
+    if (updateData.state !== undefined) user.state = updateData.state;
+    if (updateData.phoneNumber !== undefined) user.phoneNumber = updateData.phoneNumber;
+    if (updateData.address !== undefined) user.address = updateData.address;
+    if (updateData.dob !== undefined) user.dob = updateData.dob;
 
     await user.save();
     return user;

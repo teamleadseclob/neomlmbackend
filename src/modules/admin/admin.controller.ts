@@ -104,3 +104,9 @@ export const getRoiDistributionHistory = catchAsync(async (req: Request, res: Re
   const { distributions, pagination } = await adminService.getRoiDistributionHistory(req.query as any);
   return ApiResponse.paginated(res, 'ROI distribution history retrieved', distributions, pagination);
 });
+
+// Recent SWP Purchases
+export const getRecentSwpPurchases = catchAsync(async (_req: Request, res: Response) => {
+  const result = await adminService.getRecentSwpPurchases();
+  return ApiResponse.success(res, 'Recent SWP purchases retrieved', result);
+});
