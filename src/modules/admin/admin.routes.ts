@@ -5,6 +5,7 @@ import * as eventValidation from '../event/event.validation';
 import auth from '../../middlewares/auth';
 import authorize from '../../middlewares/authorize';
 import validate from '../../middlewares/validate';
+import upload from '../../middlewares/upload';
 import * as adminValidation from './admin.validation';
 
 const router = Router();
@@ -40,6 +41,9 @@ router.patch('/multilevel-rewards/config/:level', validate(adminValidation.updat
 router.get('/level-commissions', adminController.getLevelCommissions);
 router.patch('/level-commissions/:level', validate(adminValidation.updateLevelCommission), adminController.updateLevelCommission);
 
+// Upload
+router.post('/upload', upload.single('file'), adminController.uploadFile);
+
 // Events
 router.post('/events', validate(eventValidation.createEvent), eventController.createEvent);
 router.get('/events', eventController.getAllEvents);
@@ -48,6 +52,10 @@ router.delete('/events/:id', validate(eventValidation.eventIdParam), eventContro
 
 // Transactions
 router.get('/transactions', validate(adminValidation.getTransactions), adminController.getTransactions);
+
+// Change User Password & Email
+router.patch('/users/:id/change-password', validate(adminValidation.changeUserPassword), adminController.changeUserPassword);
+router.patch('/users/:id/change-email', validate(adminValidation.changeUserEmail), adminController.changeUserEmail);
 
 // 2FA Management
 router.patch('/users/:id/disable-2fa', validate(adminValidation.userIdParam), adminController.adminDisable2FA);

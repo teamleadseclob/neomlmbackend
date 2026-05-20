@@ -339,7 +339,7 @@ export interface ITransaction extends Document {
 
 // Validation schema shape
 export interface ValidationSchema {
-  body?: import('joi').ObjectSchema;
+  body?: import('joi').Schema;
   query?: import('joi').ObjectSchema;
   params?: import('joi').ObjectSchema;
 }

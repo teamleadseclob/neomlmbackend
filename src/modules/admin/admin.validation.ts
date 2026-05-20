@@ -102,6 +102,43 @@ export const updateLevelCommission: ValidationSchema = {
   }),
 };
 
+export const changeUserPassword: ValidationSchema = {
+  params: Joi.object({
+    id: Joi.string()
+      .pattern(/^[a-fA-F0-9]{24}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Invalid user ID format',
+        'any.required': 'User ID is required',
+      }),
+  }),
+  body: Joi.object({
+    newPassword: Joi.string().min(6).max(128).required().messages({
+      'string.min': 'Password must be at least 6 characters',
+      'string.max': 'Password cannot exceed 128 characters',
+      'any.required': 'New password is required',
+    }),
+  }),
+};
+
+export const changeUserEmail: ValidationSchema = {
+  params: Joi.object({
+    id: Joi.string()
+      .pattern(/^[a-fA-F0-9]{24}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Invalid user ID format',
+        'any.required': 'User ID is required',
+      }),
+  }),
+  body: Joi.object({
+    newEmail: Joi.string().email().required().messages({
+      'string.email': 'Invalid email format',
+      'any.required': 'New email is required',
+    }),
+  }),
+};
+
 export const getTransactions: ValidationSchema = {
   query: Joi.object({
     page: Joi.number().integer().min(1).default(1),

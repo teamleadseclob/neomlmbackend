@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../utils/catchAsync';
 import ApiResponse from '../../utils/ApiResponse';
+import ApiError from '../../utils/ApiError';
 import adminService from './admin.service';
 import roiService from '../roi/roi.service';
 import { AuthRequest } from '../../types';
@@ -84,6 +85,27 @@ export const updateLevelCommission = catchAsync(async (req: Request, res: Respon
 export const getTransactions = catchAsync(async (req: Request, res: Response) => {
   const { transactions, pagination } = await adminService.getTransactions(req.query);
   return ApiResponse.paginated(res, 'Transactions retrieved successfully', transactions, pagination);
+});
+
+// Upload File
+export const uploadFile = catchAsync(async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new ApiError(400, 'No file uploaded');
+  }
+  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  return ApiResponse.success(res, 'File uploaded successfully', { url: fileUrl });
+});
+
+// Change User Password
+export const changeUserPassword = catchAsync(async (req: Request, res: Response) => {
+  await adminService.changeUserPassword(req.params.id as string, req.body.newPassword as string);
+  return ApiResponse.success(res, 'User password changed successfully');
+});
+
+// Change User Email
+export const changeUserEmail = catchAsync(async (req: Request, res: Response) => {
+  const user = await adminService.changeUserEmail(req.params.id as string, req.body.newEmail as string);
+  return ApiResponse.success(res, 'User email changed successfully', user);
 });
 
 // 2FA

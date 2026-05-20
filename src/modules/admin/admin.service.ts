@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import ApiError from '../../utils/ApiError';
 import { buildPagination } from '../../utils/helpers';
 import adminRepository from './admin.repository';
@@ -391,6 +392,23 @@ class AdminService {
       transactions,
       pagination: { page, limit, totalDocs, totalPages, skip },
     };
+  }
+
+  async changeUserPassword(id: string, newPassword: string): Promise<void> {
+    const user = await adminRepository.findUserById(id);
+    if (!user) throw ApiError.notFound('User not found');
+    if (user.role === 'admin') throw ApiError.forbidden('Cannot change admin password from here');
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await User.findByIdAndUpdate(id, { password: hashed });
+  }
+
+  async changeUserEmail(id: string, newEmail: string): Promise<IUser | null> {
+    const user = await adminRepository.findUserById(id);
+    if (!user) throw ApiError.notFound('User not found');
+    if (user.role === 'admin') throw ApiError.forbidden('Cannot change admin email from here');
+    const existing = await User.findOne({ email: newEmail });
+    if (existing) throw ApiError.conflict('Email already in use');
+    return User.findByIdAndUpdate(id, { email: newEmail }, { new: true }).select('-password');
   }
 
   // 2FA

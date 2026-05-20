@@ -49,6 +49,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Serve frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
