@@ -184,6 +184,8 @@ export interface UserNetworkStats {
   level: number;
   totalDownline: number;
   directReferrals: number;
+  teamSwpVolume: number;
+  teamInvestmentVolume: number;
 }
 
 // Pagination

@@ -139,6 +139,34 @@ export const changeUserEmail: ValidationSchema = {
   }),
 };
 
+export const distributePoolFund: ValidationSchema = {
+  body: Joi.object({
+    percentage: Joi.number().min(0.01).max(100).required().messages({
+      'number.min': 'Percentage must be at least 0.01',
+      'number.max': 'Percentage cannot exceed 100',
+      'any.required': 'Percentage is required',
+    }),
+  }),
+};
+
+export const addUsdtToWallet: ValidationSchema = {
+  params: Joi.object({
+    id: Joi.string()
+      .pattern(/^[a-fA-F0-9]{24}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Invalid user ID format',
+        'any.required': 'User ID is required',
+      }),
+  }),
+  body: Joi.object({
+    amount: Joi.number().positive().required().messages({
+      'number.positive': 'Amount must be a positive number',
+      'any.required': 'Amount is required',
+    }),
+  }),
+};
+
 export const getTransactions: ValidationSchema = {
   query: Joi.object({
     page: Joi.number().integer().min(1).default(1),

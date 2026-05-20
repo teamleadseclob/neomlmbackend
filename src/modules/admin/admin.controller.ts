@@ -127,6 +127,18 @@ export const getRoiDistributionHistory = catchAsync(async (req: Request, res: Re
   return ApiResponse.paginated(res, 'ROI distribution history retrieved', distributions, pagination);
 });
 
+// Distribute Pool Fund
+export const distributePoolFund = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.distributePoolFund(req.body.percentage as number);
+  return ApiResponse.success(res, 'Pool fund distributed successfully', result);
+});
+
+// Add USDT to user wallet
+export const addUsdtToWallet = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.addUsdtToWallet(req.params.id as string, req.body.amount as number);
+  return ApiResponse.success(res, 'USDT added to wallet successfully', result);
+});
+
 // Recent SWP Purchases
 export const getRecentSwpPurchases = catchAsync(async (_req: Request, res: Response) => {
   const result = await adminService.getRecentSwpPurchases();

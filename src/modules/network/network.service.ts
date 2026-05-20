@@ -38,19 +38,37 @@ class NetworkService {
     const user = await User.findOne({ userId });
     if (!user) throw ApiError.notFound('User not found');
 
-    const [totalDownline, networkNode, directReferrals] = await Promise.all([
-      this.countDownline(user._id),
+    const downlineIds = await this.getAllDownlineIds(user._id);
+
+    const [networkNode, directReferrals, teamAgg] = await Promise.all([
       networkRepository.findByUserId(user._id),
       networkRepository.countDirectChildren(user._id),
+      User.aggregate([
+        { $match: { _id: { $in: downlineIds } } },
+        { $group: { _id: null, totalSwpVolume: { $sum: '$totalSwpVolume' }, totalInvested: { $sum: '$totalInvested' } } },
+      ]),
     ]);
 
     return {
       userId: user.userId,
       name: user.name,
       level: networkNode?.level ?? 0,
-      totalDownline,
+      totalDownline: downlineIds.length,
       directReferrals,
+      teamSwpVolume: teamAgg[0]?.totalSwpVolume ?? 0,
+      teamInvestmentVolume: teamAgg[0]?.totalInvested ?? 0,
     };
+  }
+
+  private async getAllDownlineIds(userObjectId: Types.ObjectId): Promise<Types.ObjectId[]> {
+    const ids: Types.ObjectId[] = [];
+    const children = await Network.find({ parentId: userObjectId });
+    for (const child of children) {
+      ids.push(child.userId);
+      const subIds = await this.getAllDownlineIds(child.userId);
+      ids.push(...subIds);
+    }
+    return ids;
   }
 
   private async countDownline(userObjectId: Types.ObjectId): Promise<number> {

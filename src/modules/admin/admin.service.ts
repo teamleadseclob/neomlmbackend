@@ -14,7 +14,7 @@ import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import Transaction from '../../models/Transaction';
 import RoiDistribution from '../../models/RoiDistribution';
-import { getSystemFund } from '../../models/SystemFund';
+import SystemFund, { getSystemFund } from '../../models/SystemFund';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -446,6 +446,48 @@ class AdminService {
       .limit(7)
       .lean();
     return purchases;
+  }
+
+  async distributePoolFund(percentage: number) {
+    const systemFund = await getSystemFund();
+    if (systemFund.poolFund <= 0) throw ApiError.badRequest('Pool fund is empty');
+
+    const distributeAmount = (systemFund.poolFund * percentage) / 100;
+    if (distributeAmount <= 0) throw ApiError.badRequest('Distribution amount is zero');
+
+    const activeUsers = await User.find({ role: 'user', isBlocked: false }).select('_id');
+    if (activeUsers.length === 0) throw ApiError.badRequest('No active users to distribute to');
+
+    const perUserAmount = distributeAmount / activeUsers.length;
+    const userIds = activeUsers.map(u => u._id);
+
+    await User.updateMany({ _id: { $in: userIds } }, { $inc: { walletBalance: perUserAmount } });
+
+    await SystemFund.findOneAndUpdate({}, { $inc: { poolFund: -distributeAmount } });
+
+    return {
+      poolFundBefore: systemFund.poolFund,
+      poolFundAfter: systemFund.poolFund - distributeAmount,
+      percentage,
+      distributedAmount: distributeAmount,
+      activeUsers: activeUsers.length,
+      perUserAmount: Math.round(perUserAmount * 100) / 100,
+    };
+  }
+
+  async addUsdtToWallet(id: string, amount: number) {
+    const user = await adminRepository.findUserById(id);
+    if (!user) throw ApiError.notFound('User not found');
+    if (user.role === 'admin') throw ApiError.forbidden('Cannot add USDT to an admin');
+    if (user.isBlocked) throw ApiError.forbidden('Cannot add USDT to a blocked user');
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $inc: { walletBalance: amount } },
+      { new: true },
+    ).select('name userId email walletBalance');
+
+    return updatedUser;
   }
 
   async getUserJoinChart(days: number = 30) {

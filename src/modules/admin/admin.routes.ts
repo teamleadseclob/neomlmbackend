@@ -7,6 +7,7 @@ import authorize from '../../middlewares/authorize';
 import validate from '../../middlewares/validate';
 import upload from '../../middlewares/upload';
 import * as adminValidation from './admin.validation';
+import * as swpController from '../swp/swp.controller';
 
 const router = Router();
 
@@ -22,6 +23,8 @@ router.get('/users/join-chart', adminController.getUserJoinChart);
 router.patch('/users/:id/block', validate(adminValidation.userIdParam), adminController.blockUser);
 router.patch('/users/:id/unblock', validate(adminValidation.userIdParam), adminController.unblockUser);
 router.post('/users/:id/grant-swp', validate(adminValidation.adminGrantSwp), adminController.grantSwp);
+router.post('/users/:id/add-usdt', validate(adminValidation.addUsdtToWallet), adminController.addUsdtToWallet);
+router.post('/pool-fund/distribute', validate(adminValidation.distributePoolFund), adminController.distributePoolFund);
 router.get('/swp-purchases/recent', adminController.getRecentSwpPurchases);
 
 // Network
@@ -49,6 +52,9 @@ router.post('/events', validate(eventValidation.createEvent), eventController.cr
 router.get('/events', eventController.getAllEvents);
 router.patch('/events/:id', validate(eventValidation.updateEvent), eventController.updateEvent);
 router.delete('/events/:id', validate(eventValidation.eventIdParam), eventController.deleteEvent);
+
+// SWP
+router.get('/swp/packages', swpController.getPackages);
 
 // Transactions
 router.get('/transactions', validate(adminValidation.getTransactions), adminController.getTransactions);
