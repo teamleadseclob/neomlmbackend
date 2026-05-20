@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as userController from './user.controller';
+import * as notificationController from '../notification/notification.controller';
 import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
 import * as userValidation from './user.validation';
@@ -15,6 +16,7 @@ router.get('/me/income-chart', validate(userValidation.incomeChart), userControl
 router.patch('/me', validate(userValidation.updateProfile), userController.updateProfile);
 router.get('/referrals', userController.getDirectReferrals);
 router.post('/send-referral', validate(userValidation.sendReferral), userController.sendReferral);
+router.get('/notifications', notificationController.getEnabledNotifications);
 router.get('/list', validate(userValidation.getUsers), userController.getUsers);
 router.get('/:userId', validate(userValidation.getUserById), userController.getUserById);
 

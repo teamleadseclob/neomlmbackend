@@ -2,6 +2,8 @@ import { Router } from 'express';
 import * as adminController from './admin.controller';
 import * as eventController from '../event/event.controller';
 import * as eventValidation from '../event/event.validation';
+import * as notificationController from '../notification/notification.controller';
+import * as notificationValidation from '../notification/notification.validation';
 import auth from '../../middlewares/auth';
 import authorize from '../../middlewares/authorize';
 import validate from '../../middlewares/validate';
@@ -46,6 +48,12 @@ router.patch('/level-commissions/:level', validate(adminValidation.updateLevelCo
 
 // Upload
 router.post('/upload', upload.single('file'), adminController.uploadFile);
+
+// Notifications
+router.post('/notifications', upload.single('image'), notificationController.createNotification);
+router.get('/notifications', notificationController.getAllNotifications);
+router.patch('/notifications/:id/toggle', validate(notificationValidation.toggleNotification), notificationController.toggleNotification);
+router.delete('/notifications/:id', validate(notificationValidation.notificationIdParam), notificationController.deleteNotification);
 
 // Events
 router.post('/events', validate(eventValidation.createEvent), eventController.createEvent);
