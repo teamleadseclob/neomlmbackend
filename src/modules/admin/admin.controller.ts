@@ -16,6 +16,11 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
   return ApiResponse.paginated(res, 'Users retrieved successfully', users, pagination);
 });
 
+export const getUserById = catchAsync(async (req: Request, res: Response) => {
+  const user = await adminService.getUserById(req.params.id as string);
+  return ApiResponse.success(res, 'User retrieved successfully', user);
+});
+
 export const blockUser = catchAsync(async (req: Request, res: Response) => {
   const user = await adminService.blockUser(req.params.id as string);
   return ApiResponse.success(res, 'User blocked successfully', user);

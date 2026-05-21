@@ -54,6 +54,12 @@ class AdminService {
     return { users, pagination };
   }
 
+  async getUserById(id: string): Promise<IUser> {
+    const user = await adminRepository.findUserById(id);
+    if (!user) throw ApiError.notFound('User not found');
+    return user;
+  }
+
   async blockUser(id: string): Promise<IUser | null> {
     const user = await adminRepository.findUserById(id);
     if (!user) throw ApiError.notFound('User not found');

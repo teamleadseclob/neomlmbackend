@@ -22,6 +22,7 @@ router.get('/revenue-chart', validate(adminValidation.revenueChart), adminContro
 // Users
 router.get('/users', validate(adminValidation.getUsers), adminController.getUsers);
 router.get('/users/join-chart', adminController.getUserJoinChart);
+router.get('/users/:id', validate(adminValidation.userIdParam), adminController.getUserById);
 router.patch('/users/:id/block', validate(adminValidation.userIdParam), adminController.blockUser);
 router.patch('/users/:id/unblock', validate(adminValidation.userIdParam), adminController.unblockUser);
 router.post('/users/:id/grant-swp', validate(adminValidation.adminGrantSwp), adminController.grantSwp);
