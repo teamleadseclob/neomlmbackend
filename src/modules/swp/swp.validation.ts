@@ -18,5 +18,16 @@ export const purchase: ValidationSchema = {
         'any.only': `Amount must be one of: $${ALLOWED_SWP_AMOUNTS.join(', $')}`,
         'any.required': 'Amount is required',
       }),
+    paymentMethod: Joi.string().valid('web3', 'wallet').default('web3'),
+    walletAddress: Joi.string().when('paymentMethod', {
+      is: 'web3',
+      then: Joi.string().required(),
+      otherwise: Joi.string().optional().allow(null, ''),
+    }),
+    transactionHash: Joi.string().when('paymentMethod', {
+      is: 'web3',
+      then: Joi.string().required(),
+      otherwise: Joi.string().optional().allow(null, ''),
+    }),
   }),
 };

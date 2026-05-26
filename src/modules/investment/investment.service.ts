@@ -8,7 +8,14 @@ import MultiLevelReward from '../../models/MultiLevelReward';
 import { MIN_INVESTMENT } from '../../models/SwpPurchase';
 
 class InvestmentService {
-  async invest(userId: Types.ObjectId, amount: number) {
+  async invest(userId: Types.ObjectId, input: {
+    amount: number;
+    paymentMethod: 'web3' | 'wallet';
+    walletAddress?: string;
+    transactionHash?: string;
+  }) {
+    const { amount, paymentMethod, walletAddress, transactionHash } = input;
+
     const user = await User.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
 
@@ -29,6 +36,14 @@ class InvestmentService {
       throw ApiError.badRequest(`Amount exceeds remaining limit. You can invest up to $${remaining}`);
     }
 
+    // Deduct from wallet balance if paying via wallet
+    if (paymentMethod === 'wallet') {
+      if (user.walletBalance < amount) {
+        throw ApiError.badRequest(`Insufficient wallet balance. Available: $${user.walletBalance}`);
+      }
+      user.walletBalance -= amount;
+    }
+
     const investedBefore = user.totalInvested;
     const investedAfter = investedBefore + amount;
 
@@ -40,6 +55,9 @@ class InvestmentService {
       amount,
       investedBefore,
       investedAfter,
+      paymentMethod,
+      walletAddress: walletAddress || null,
+      transactionHash: transactionHash || null,
     });
 
     return {

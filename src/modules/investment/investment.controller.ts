@@ -5,7 +5,13 @@ import investmentService from './investment.service';
 import { AuthRequest } from '../../types';
 
 export const invest = catchAsync(async (req, res: Response) => {
-  const result = await investmentService.invest((req as AuthRequest).user._id, req.body.amount);
+  const { amount, paymentMethod, walletAddress, transactionHash } = req.body;
+  const result = await investmentService.invest((req as AuthRequest).user._id, {
+    amount,
+    paymentMethod,
+    walletAddress,
+    transactionHash,
+  });
   return ApiResponse.created(res, 'Investment successful', result);
 });
 

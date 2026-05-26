@@ -11,13 +11,28 @@ import { creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
 import { creditFunds } from '../../models/SystemFund';
 
 class SwpService {
-  async purchase(userId: Types.ObjectId, amount: number) {
+  async purchase(userId: Types.ObjectId, input: {
+    amount: number;
+    paymentMethod: 'web3' | 'wallet';
+    walletAddress?: string;
+    transactionHash?: string;
+  }) {
+    const { amount, paymentMethod, walletAddress, transactionHash } = input;
+
     if (!ALLOWED_SWP_AMOUNTS.includes(amount)) {
       throw ApiError.badRequest(`Amount must be one of: $${ALLOWED_SWP_AMOUNTS.join(', $')}`);
     }
 
     const user = await User.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
+
+    // Deduct from wallet balance if paying via wallet
+    if (paymentMethod === 'wallet') {
+      if (user.walletBalance < amount) {
+        throw ApiError.badRequest(`Insufficient wallet balance. Available: $${user.walletBalance}`);
+      }
+      user.walletBalance -= amount;
+    }
 
     const swpBefore = user.swpBalance;
     const swpAfter = swpBefore + amount;
@@ -42,6 +57,9 @@ class SwpService {
       amount,
       swpBefore,
       swpAfter,
+      paymentMethod,
+      walletAddress: walletAddress || null,
+      transactionHash: transactionHash || null,
     });
 
     // Credit system funds (pool 2%, management 3%, operation 5%)

@@ -28,6 +28,20 @@ const swpPurchaseSchema = new Schema<ISwpPurchase>(
       required: true,
       default: 'SWP'
     },
+    paymentMethod: {
+      type: String,
+      enum: ['web3', 'wallet'],
+      required: true,
+      default: 'web3',
+    },
+    walletAddress: {
+      type: String,
+      default: null,
+    },
+    transactionHash: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

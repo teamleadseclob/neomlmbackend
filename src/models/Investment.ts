@@ -22,6 +22,20 @@ const investmentSchema = new Schema<IInvestment>(
       type: Number,
       required: true,
     },
+    paymentMethod: {
+      type: String,
+      enum: ['web3', 'wallet'],
+      required: true,
+      default: 'web3',
+    },
+    walletAddress: {
+      type: String,
+      default: null,
+    },
+    transactionHash: {
+      type: String,
+      default: null,
+    },
     lastRoiCreditedAt: {
       type: Date,
       default: null,

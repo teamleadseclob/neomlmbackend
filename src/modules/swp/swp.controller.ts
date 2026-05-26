@@ -5,7 +5,13 @@ import swpService from './swp.service';
 import { AuthRequest } from '../../types';
 
 export const purchase = catchAsync(async (req, res: Response) => {
-  const result = await swpService.purchase((req as AuthRequest).user._id, req.body.amount);
+  const { amount, paymentMethod, walletAddress, transactionHash } = req.body;
+  const result = await swpService.purchase((req as AuthRequest).user._id, {
+    amount,
+    paymentMethod,
+    walletAddress,
+    transactionHash,
+  });
   return ApiResponse.created(res, 'SWP purchased successfully', result);
 });
 

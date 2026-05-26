@@ -105,6 +105,9 @@ export interface ISwpPurchase extends Document {
   swpBefore: number;
   swpAfter: number;
   purchaseType: 'SWP' | 'admin';
+  paymentMethod: 'web3' | 'wallet';
+  walletAddress: string | null;
+  transactionHash: string | null;
   createdAt: Date;
 }
 
@@ -131,6 +134,9 @@ export interface IInvestment extends Document {
   amount: number;
   investedBefore: number;
   investedAfter: number;
+  paymentMethod: 'web3' | 'wallet';
+  walletAddress: string | null;
+  transactionHash: string | null;
   lastRoiCreditedAt: Date;
   createdAt: Date;
 }
