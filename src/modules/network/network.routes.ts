@@ -23,4 +23,10 @@ router.get(
 
 router.get('/stats', authorize('admin') as any, networkController.getNetworkStats);
 
+router.get(
+  '/team-member/:userId',
+  validate(networkValidation.getDownline),
+  networkController.getTeamMemberDetails,
+);
+
 export default router;
