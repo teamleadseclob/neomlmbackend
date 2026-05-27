@@ -22,6 +22,7 @@ import walletRoutes from './modules/wallet/wallet.routes';
 import eventRoutes from './modules/event/event.routes';
 import { userRouter as supportUserRoutes, adminRouter as supportAdminRoutes } from './modules/support/support.routes';
 import { userRouter as kycUserRoutes, adminRouter as kycAdminRoutes } from './modules/kyc/kyc.routes';
+import { userRouter as marketUserRoutes, adminRouter as marketAdminRoutes } from './modules/market/market.routes';
 import reportRoutes from './modules/report/report.routes';
 
 const app = express();
@@ -74,6 +75,8 @@ app.use('/api/support', supportUserRoutes);
 app.use('/api/admin/support', supportAdminRoutes);
 app.use('/api/kyc', kycUserRoutes);
 app.use('/api/admin/kyc', kycAdminRoutes);
+app.use('/api/market', marketUserRoutes);
+app.use('/api/admin/market', marketAdminRoutes);
 app.use('/api/admin/reports', reportRoutes);
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
