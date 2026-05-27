@@ -105,6 +105,11 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    kycStatus: {
+      type: String,
+      enum: ['not_submitted', 'pending', 'approved', 'rejected'],
+      default: 'not_submitted',
+    },
     twoFactorEnabled: {
       type: Boolean,
       default: false,

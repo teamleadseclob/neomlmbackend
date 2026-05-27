@@ -23,6 +23,7 @@ export interface IUser extends Document {
   withdrawnAmount: number;
   lastWithdrawalDate: Date | null;
   isBlocked: boolean;
+  kycStatus: 'not_submitted' | 'pending' | 'approved' | 'rejected';
   twoFactorEnabled: boolean;
   twoFactorSecret: string | null;
   gender: 'male' | 'female' | 'other' | null;

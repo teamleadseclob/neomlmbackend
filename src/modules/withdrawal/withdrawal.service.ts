@@ -60,6 +60,9 @@ class WithdrawalService {
     const user = await User.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
     if (user.isBlocked) throw ApiError.forbidden('Account is blocked');
+    if (user.kycStatus !== 'approved') {
+      throw ApiError.forbidden('KYC must be approved before requesting withdrawal');
+    }
 
     if (user.walletBalance < amount) {
       throw ApiError.badRequest(`Insufficient balance. Available: $${user.walletBalance}`);
