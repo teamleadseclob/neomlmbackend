@@ -23,8 +23,9 @@ class InvestmentService {
       throw ApiError.badRequest('You must purchase an SWP package before investing');
     }
 
-    if (amount < MIN_INVESTMENT) {
-      throw ApiError.badRequest(`Minimum investment is $${MIN_INVESTMENT}`);
+    const minAmount = paymentMethod === 'wallet' ? 10 : MIN_INVESTMENT;
+    if (amount < minAmount) {
+      throw ApiError.badRequest(`Minimum investment is $${minAmount} for ${paymentMethod} payment`);
     }
 
     const remaining = user.maxInvestmentLimit - user.totalInvested;
