@@ -6,7 +6,7 @@ class MarketService {
   async expressInterest(userId: Types.ObjectId, marketTitle: string) {
     const existing = await MarketInterest.findOne({ userId, marketTitle });
     if (existing) {
-      throw ApiError.badRequest('You have already expressed interest in this market');
+      throw ApiError.badRequest(`You have already expressed interest in this ${marketTitle} market`);
     }
     return MarketInterest.create({ userId, marketTitle });
   }
