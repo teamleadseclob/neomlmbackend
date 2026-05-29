@@ -140,7 +140,7 @@ export const distributePoolFund = catchAsync(async (req: Request, res: Response)
 
 // Add USDT to user wallet
 export const addUsdtToWallet = catchAsync(async (req: Request, res: Response) => {
-  const result = await adminService.addUsdtToWallet(req.params.id as string, req.body.amount as number);
+  const result = await adminService.addUsdtToWallet(req.params.id as string, req.body.amount as number, (req as AuthRequest).user._id);
   return ApiResponse.success(res, 'USDT added to wallet successfully', result);
 });
 

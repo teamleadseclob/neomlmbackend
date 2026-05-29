@@ -9,6 +9,7 @@ import TeamStats from '../../models/TeamStats';
 import rankService from '../rank/rank.service';
 import { creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
 import { creditFunds } from '../../models/SystemFund';
+import { notifyEarning } from '../../utils/notifyEarning';
 
 class SwpService {
   async purchase(userId: Types.ObjectId, input: {
@@ -225,6 +226,13 @@ class SwpService {
       });
 
       await creditWithCutoff(currentNode.parentId, commissionAmount);
+
+      // Notify user
+      if (currentLevel === 1) {
+        await notifyEarning(currentNode.parentId, 'referral_income', netAmount);
+      } else {
+        await notifyEarning(currentNode.parentId, 'layered_rewards', netAmount, `Level ${currentLevel}`);
+      }
 
       currentNode = await Network.findOne({ userId: currentNode.parentId });
       currentLevel++;

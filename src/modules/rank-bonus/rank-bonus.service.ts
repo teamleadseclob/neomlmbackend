@@ -7,6 +7,7 @@ import { creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
 import RankBonusReward from '../../models/RankBonusReward';
 import ApiError from '../../utils/ApiError';
 import logger from '../../config/logger';
+import { notifyEarning } from '../../utils/notifyEarning';
 
 class RankBonusService {
   async distribute(amount: number, adminId: Types.ObjectId) {
@@ -54,6 +55,7 @@ class RankBonusService {
           cutoffAmount: cutoffInfo.cutoffAmount,
           netAmount: cutoffInfo.netAmount,
         });
+        await notifyEarning(userId, 'royalty_rewards', cutoffInfo.netAmount, rank.name);
       }
 
       const rankTotal = Math.round(perUserAmount * userIds.length * 100) / 100;

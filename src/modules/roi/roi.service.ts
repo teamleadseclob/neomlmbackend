@@ -12,6 +12,7 @@ import MultiLevelReward from '../../models/MultiLevelReward';
 import logger from '../../config/logger';
 import { creditWithoutCutoff, creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
 import RoiDistribution from '../../models/RoiDistribution';
+import { notifyEarning } from '../../utils/notifyEarning';
 
 const CAP_MULTIPLIER = 2; // 200% cap for both ROI and MLR
 
@@ -297,6 +298,8 @@ class RoiService {
           });
 
           await creditWithCutoff(earnerId, rewardAmount, { totalMultiLevelEarned: rewardAmount });
+
+          await notifyEarning(earnerId, 'layered_rewards', netAmount, `Level ${currentLevel}`);
 
           totalDistributed += rewardAmount;
         }

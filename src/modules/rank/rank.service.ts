@@ -6,6 +6,7 @@ import User from '../../models/User';
 import ApiError from '../../utils/ApiError';
 import logger from '../../config/logger';
 import { creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
+import { notifyEarning } from '../../utils/notifyEarning';
 
 class RankService {
   /**
@@ -63,6 +64,8 @@ class RankService {
       });
 
       await creditWithCutoff(userObjectId, rank.reward);
+
+      await notifyEarning(userObjectId, 'rank_income', netAmount, rank.name);
 
       achievedSet.add(rank._id.toString());
 

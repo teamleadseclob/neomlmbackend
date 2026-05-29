@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { Types } from 'mongoose';
 import ApiError from '../../utils/ApiError';
 import { buildPagination } from '../../utils/helpers';
 import adminRepository from './admin.repository';
@@ -14,7 +15,9 @@ import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import Transaction from '../../models/Transaction';
 import RoiDistribution from '../../models/RoiDistribution';
+import SpecialReward from '../../models/SpecialReward';
 import SystemFund, { getSystemFund } from '../../models/SystemFund';
+import { notifyEarning } from '../../utils/notifyEarning';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -481,7 +484,7 @@ class AdminService {
     };
   }
 
-  async addUsdtToWallet(id: string, amount: number) {
+  async addUsdtToWallet(id: string, amount: number, adminId: Types.ObjectId) {
     const user = await adminRepository.findUserById(id);
     if (!user) throw ApiError.notFound('User not found');
     if (user.role === 'admin') throw ApiError.forbidden('Cannot add USDT to an admin');
@@ -492,6 +495,9 @@ class AdminService {
       { $inc: { walletBalance: amount } },
       { new: true },
     ).select('name userId email walletBalance');
+
+    await SpecialReward.create({ userId: user._id, amount, grantedBy: adminId });
+    await notifyEarning(user._id, 'special_rewards', amount);
 
     return updatedUser;
   }
