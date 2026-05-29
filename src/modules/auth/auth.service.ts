@@ -20,8 +20,8 @@ class AuthService {
    * Does NOT create the user yet.
    */
   async register({ name, email, password, sponsorId }: RegisterInput): Promise<{ message: string; email: string }> {
-    const emailTaken = await authRepository.emailExists(email);
-    if (emailTaken) throw ApiError.conflict('Email is already registered');
+    // const emailTaken = await authRepository.emailExists(email);
+    // if (emailTaken) throw ApiError.conflict('Email is already registered');
 
     if (sponsorId) {
       const sponsor = await authRepository.findByUserId(sponsorId);
@@ -84,12 +84,12 @@ class AuthService {
       throw ApiError.badRequest(`Invalid OTP. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`);
     }
 
-    // OTP correct — check email not taken (race condition guard)
-    const emailTaken = await authRepository.emailExists(email);
-    if (emailTaken) {
-      await PendingRegistration.deleteMany({ email });
-      throw ApiError.conflict('Email is already registered');
-    }
+    // OTP correct — create user (skip duplicate email check temporarily)
+    // const emailTaken = await authRepository.emailExists(email);
+    // if (emailTaken) {
+    //   await PendingRegistration.deleteMany({ email });
+    //   throw ApiError.conflict('Email is already registered');
+    // }
 
     // Generate unique userId
     let userId: string;
