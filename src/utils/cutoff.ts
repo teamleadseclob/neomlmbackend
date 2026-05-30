@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import User from '../models/User';
 
-export const CUTOFF_PERCENTAGE = 10; // 10%
+export const CUTOFF_PERCENTAGE = 5; // 5%
 const ADMIN_ROLE = 'admin';
 
 interface CutoffResult {

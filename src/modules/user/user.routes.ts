@@ -19,6 +19,7 @@ router.patch('/me', validate(userValidation.updateProfile), userController.updat
 router.get('/referrals', userController.getDirectReferrals);
 router.post('/send-referral', validate(userValidation.sendReferral), userController.sendReferral);
 router.get('/reward-wallet', rewardWalletController.getRewardWallet);
+router.get('/reward-wallet/history', rewardWalletController.getRewardWalletHistory);
 router.get('/notifications', notificationController.getEnabledNotifications);
 router.get('/notifications/earnings', userNotificationController.getMyNotifications);
 router.get('/notifications/earnings/unread-count', userNotificationController.getUnreadCount);
