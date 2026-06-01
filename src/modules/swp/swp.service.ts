@@ -279,8 +279,12 @@ class SwpService {
   async getPackages(userId: Types.ObjectId) {
     const [lastPurchase, user] = await Promise.all([
       SwpPurchase.findOne({ userId }).sort({ createdAt: -1 }).lean(),
-      User.findById(userId).select('swpBalance maxInvestmentLimit totalInvested').lean(),
+      User.findById(userId).select('swpBalance maxInvestmentLimit totalInvested totalRoiEarned').lean(),
     ]);
+
+    const totalInvested = user?.totalInvested ?? 0;
+    const totalRoiEarned = user?.totalRoiEarned ?? 0;
+    const roiCap = totalInvested * 2;
 
     return {
       packages: ALLOWED_SWP_AMOUNTS.map((amount) => ({
@@ -291,7 +295,10 @@ class SwpService {
       lastPurchased: lastPurchase?.amount ?? null,
       totalSwpPurchased: user?.swpBalance ?? 0,
       maxInvestmentLimit: user?.maxInvestmentLimit ?? 0,
-      totalInvested: user?.totalInvested ?? 0,
+      totalInvested,
+      totalRoiEarned,
+      roiCap,
+      isRoiLimitReached: totalRoiEarned >= roiCap && roiCap > 0,
     };
   }
 
