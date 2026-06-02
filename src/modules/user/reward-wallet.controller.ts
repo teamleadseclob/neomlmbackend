@@ -80,6 +80,7 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
         .then(docs => docs.map(d => ({
           type: 'referral_income',
           amount: d.netAmount,
+          fromUser: d.fromUserId ? { _id: (d.fromUserId as any)._id, name: (d.fromUserId as any).name, userId: (d.fromUserId as any).userId } : null,
           detail: `From ${(d.fromUserId as any)?.name || 'User'}`,
           createdAt: d.createdAt,
         }))),
@@ -94,6 +95,7 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
         .then(docs => docs.map(d => ({
           type: 'layered_rewards',
           amount: d.netAmount,
+          fromUser: d.fromUserId ? { _id: (d.fromUserId as any)._id, name: (d.fromUserId as any).name, userId: (d.fromUserId as any).userId } : null,
           detail: `Level ${d.level} from ${(d.fromUserId as any)?.name || 'User'}`,
           createdAt: d.createdAt,
         }))),
@@ -105,6 +107,7 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
         .then(docs => docs.map(d => ({
           type: 'layered_rewards',
           amount: d.netAmount,
+          fromUser: d.fromUserId ? { _id: (d.fromUserId as any)._id, name: (d.fromUserId as any).name, userId: (d.fromUserId as any).userId } : null,
           detail: `MLR Level ${d.level} from ${(d.fromUserId as any)?.name || 'User'}`,
           createdAt: d.createdAt,
         }))),

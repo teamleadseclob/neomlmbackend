@@ -9,6 +9,7 @@ import RoiHistory from '../../models/RoiHistory';
 import MultiLevelReward from '../../models/MultiLevelReward';
 import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
+import SpecialReward from '../../models/SpecialReward';
 import { IUser, Pagination, PaginationQuery } from '../../types';
 import { sendReferralEmail } from '../../utils/email';
 
@@ -132,6 +133,16 @@ class UserService {
       rankBonusAgg,
       roiMonthlyAgg,
       mlrMonthlyAgg,
+      lastRoi,
+      lastMlr,
+      referralAgg,
+      layeredCommissionAgg,
+      specialAgg,
+      lastReferral,
+      lastLayered,
+      lastRank,
+      lastRoyalty,
+      lastSpecial,
     ] = await Promise.all([
       User.countDocuments({ sponsorId: user.userId }),
       this.countDownline(userObjectId),
@@ -164,20 +175,56 @@ class UserService {
         { $match: { earnerId: userObjectId, createdAt: monthMatch } },
         { $group: { _id: null, gross: { $sum: '$grossAmount' }, cutoff: { $sum: '$cutoffAmount' }, net: { $sum: '$netAmount' } } },
       ]),
+      RoiHistory.findOne({ userId: userObjectId }).sort({ createdAt: -1 }).select('roiEarned createdAt').lean(),
+      MultiLevelReward.findOne({ earnerId: userObjectId }).sort({ createdAt: -1 }).select('netAmount createdAt').lean(),
+      Commission.aggregate([
+        { $match: { earnerId: userObjectId, level: 1 } },
+        { $group: { _id: null, total: { $sum: '$netAmount' } } },
+      ]),
+      Commission.aggregate([
+        { $match: { earnerId: userObjectId, level: { $gt: 1 } } },
+        { $group: { _id: null, total: { $sum: '$netAmount' } } },
+      ]),
+      SpecialReward.aggregate([
+        { $match: { userId: userObjectId } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      Commission.findOne({ earnerId: userObjectId, level: 1 }).sort({ createdAt: -1 }).select('netAmount createdAt').lean(),
+      Commission.findOne({ earnerId: userObjectId, level: { $gt: 1 } }).sort({ createdAt: -1 }).select('netAmount createdAt').lean(),
+      RankReward.findOne({ userId: userObjectId }).sort({ createdAt: -1 }).select('netAmount createdAt').lean(),
+      RankBonusReward.findOne({ userId: userObjectId }).sort({ createdAt: -1 }).select('netAmount createdAt').lean(),
+      SpecialReward.findOne({ userId: userObjectId }).sort({ createdAt: -1 }).select('amount createdAt').lean(),
     ]);
 
     const roiMonthly = roiMonthlyAgg[0]?.gross ?? 0;
     const mlrMonthly = { gross: mlrMonthlyAgg[0]?.gross ?? 0, cutoff: mlrMonthlyAgg[0]?.cutoff ?? 0, net: mlrMonthlyAgg[0]?.net ?? 0 };
 
-    const roi = { gross: roiAgg[0]?.gross ?? 0, cutoff: 0, net: roiAgg[0]?.gross ?? 0, thisMonth: Math.round(roiMonthly * 100) / 100 };
+    const roi = { gross: roiAgg[0]?.gross ?? 0, cutoff: 0, net: roiAgg[0]?.gross ?? 0, thisMonth: Math.round(roiMonthly * 100) / 100, lastEarned: lastRoi ? { amount: lastRoi.roiEarned, date: lastRoi.createdAt } : null };
     const commissions = { gross: commissionAgg[0]?.gross ?? 0, cutoff: commissionAgg[0]?.cutoff ?? 0, net: commissionAgg[0]?.net ?? 0 };
-    const multiLevelRewards = { gross: mlrAgg[0]?.gross ?? 0, cutoff: mlrAgg[0]?.cutoff ?? 0, net: mlrAgg[0]?.net ?? 0, thisMonth: Math.round(mlrMonthly.net * 100) / 100 };
+    const multiLevelRewards = { gross: mlrAgg[0]?.gross ?? 0, cutoff: mlrAgg[0]?.cutoff ?? 0, net: mlrAgg[0]?.net ?? 0, thisMonth: Math.round(mlrMonthly.net * 100) / 100, lastEarned: lastMlr ? { amount: lastMlr.netAmount, date: lastMlr.createdAt } : null };
     const rankRewards = { gross: rankRewardAgg[0]?.gross ?? 0, cutoff: rankRewardAgg[0]?.cutoff ?? 0, net: rankRewardAgg[0]?.net ?? 0 };
     const rankBonus = { gross: rankBonusAgg[0]?.gross ?? 0, cutoff: rankBonusAgg[0]?.cutoff ?? 0, net: rankBonusAgg[0]?.net ?? 0 };
 
     const totalGross = roi.gross + commissions.gross + multiLevelRewards.gross + rankRewards.gross + rankBonus.gross;
     const totalCutoff = commissions.cutoff + multiLevelRewards.cutoff + rankRewards.cutoff + rankBonus.cutoff;
     const totalNet = roi.net + commissions.net + multiLevelRewards.net + rankRewards.net + rankBonus.net;
+
+    const referralIncome = referralAgg[0]?.total ?? 0;
+    const layeredRewardsTotal = (layeredCommissionAgg[0]?.total ?? 0) + (mlrAgg[0]?.net ?? 0);
+    const rankIncomeTotal = rankRewardAgg[0]?.net ?? 0;
+    const royaltyRewardsTotal = rankBonusAgg[0]?.net ?? 0;
+    const specialRewardsTotal = specialAgg[0]?.total ?? 0;
+    const totalRewardWallet = referralIncome + layeredRewardsTotal + rankIncomeTotal + royaltyRewardsTotal + specialRewardsTotal;
+
+    const allLastEarned = [
+      lastReferral ? { amount: lastReferral.netAmount, date: lastReferral.createdAt, type: 'referral_income' } : null,
+      lastLayered ? { amount: lastLayered.netAmount, date: lastLayered.createdAt, type: 'layered_rewards' } : null,
+      lastMlr ? { amount: lastMlr.netAmount, date: lastMlr.createdAt, type: 'layered_rewards' } : null,
+      lastRank ? { amount: lastRank.netAmount, date: lastRank.createdAt, type: 'rank_income' } : null,
+      lastRoyalty ? { amount: lastRoyalty.netAmount, date: lastRoyalty.createdAt, type: 'royalty_rewards' } : null,
+      lastSpecial ? { amount: (lastSpecial as any).amount, date: lastSpecial.createdAt, type: 'special_rewards' } : null,
+    ].filter(Boolean).sort((a, b) => new Date(b!.date).getTime() - new Date(a!.date).getTime());
+    const lastEarnedOverall = allLastEarned[0] ?? null;
 
     return {
       walletBalance: user.walletBalance,
@@ -193,6 +240,17 @@ class UserService {
           totalNetEarnings: Math.round(totalNet * 100) / 100,
         },
         breakdown: { roi, commissions, multiLevelRewards, rankRewards, rankBonus },
+      },
+      rewardWallet: {
+        total: Math.round(totalRewardWallet * 100) / 100,
+        lastEarned: lastEarnedOverall,
+        breakdown: {
+          referralIncome: { total: Math.round(referralIncome * 100) / 100, lastEarned: lastReferral ? { amount: lastReferral.netAmount, date: lastReferral.createdAt } : null },
+          layeredRewards: { total: Math.round(layeredRewardsTotal * 100) / 100, lastEarned: lastLayered ? { amount: lastLayered.netAmount, date: lastLayered.createdAt } : null },
+          rankIncome: { total: Math.round(rankIncomeTotal * 100) / 100, lastEarned: lastRank ? { amount: lastRank.netAmount, date: lastRank.createdAt } : null },
+          royaltyRewards: { total: Math.round(royaltyRewardsTotal * 100) / 100, lastEarned: lastRoyalty ? { amount: lastRoyalty.netAmount, date: lastRoyalty.createdAt } : null },
+          specialRewards: { total: Math.round(specialRewardsTotal * 100) / 100, lastEarned: lastSpecial ? { amount: (lastSpecial as any).amount, date: lastSpecial.createdAt } : null },
+        },
       },
     };
   }
