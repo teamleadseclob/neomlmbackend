@@ -20,9 +20,7 @@ class SwpService {
   }) {
     const { amount, paymentMethod, walletAddress, transactionHash } = input;
 
-    if (!ALLOWED_SWP_AMOUNTS.includes(amount)) {
-      throw ApiError.badRequest(`Amount must be one of: $${ALLOWED_SWP_AMOUNTS.join(', $')}`);
-    }
+
 
     const user = await User.findById(userId);
     if (!user) throw ApiError.notFound('User not found');

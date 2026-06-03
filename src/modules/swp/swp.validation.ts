@@ -12,10 +12,10 @@ export const commissionHistory: ValidationSchema = {
 export const purchase: ValidationSchema = {
   body: Joi.object({
     amount: Joi.number()
-      .valid(...ALLOWED_SWP_AMOUNTS)
+      .positive()
       .required()
       .messages({
-        'any.only': `Amount must be one of: $${ALLOWED_SWP_AMOUNTS.join(', $')}`,
+        'number.positive': 'Amount must be a positive number',
         'any.required': 'Amount is required',
       }),
     paymentMethod: Joi.string().valid('web3', 'wallet').default('web3'),
