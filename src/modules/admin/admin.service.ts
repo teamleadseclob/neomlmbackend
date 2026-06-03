@@ -490,16 +490,19 @@ class AdminService {
     if (user.role === 'admin') throw ApiError.forbidden('Cannot add USDT to an admin');
     if (user.isBlocked) throw ApiError.forbidden('Cannot add USDT to a blocked user');
 
+    const cutoffAmount = Math.round(amount * 0.05 * 100) / 100;
+    const netAmount = Math.round((amount - cutoffAmount) * 100) / 100;
+
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      { $inc: { walletBalance: amount } },
+      { $inc: { walletBalance: netAmount } },
       { new: true },
     ).select('name userId email walletBalance');
 
-    await SpecialReward.create({ userId: user._id, amount, grantedBy: adminId });
-    await notifyEarning(user._id, 'special_rewards', amount);
+    await SpecialReward.create({ userId: user._id, amount, grossAmount: amount, cutoffAmount, netAmount, grantedBy: adminId });
+    await notifyEarning(user._id, 'special_rewards', netAmount);
 
-    return updatedUser;
+    return { ...updatedUser?.toJSON(), grossAmount: amount, cutoffAmount, netAmount };
   }
 
   async getUserJoinChart(days: number = 30) {
