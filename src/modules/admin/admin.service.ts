@@ -502,7 +502,7 @@ class AdminService {
     await SpecialReward.create({ userId: user._id, amount, grossAmount: amount, cutoffAmount, netAmount, grantedBy: adminId });
     await notifyEarning(user._id, 'special_rewards', netAmount);
 
-    return { ...updatedUser?.toJSON(), grossAmount: amount, cutoffAmount, netAmount };
+    return { user: updatedUser, grossAmount: amount, cutoffAmount, netAmount };
   }
 
   async getUserJoinChart(days: number = 30) {
