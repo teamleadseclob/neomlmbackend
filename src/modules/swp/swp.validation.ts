@@ -1,6 +1,5 @@
 import Joi from 'joi';
 import { ValidationSchema } from '../../types';
-import { ALLOWED_SWP_AMOUNTS } from '../../models/SwpPurchase';
 
 export const commissionHistory: ValidationSchema = {
   query: Joi.object({
