@@ -36,7 +36,7 @@ export const getRewardWallet = catchAsync(async (req: Request, res: Response) =>
     ]),
     SpecialReward.aggregate([
       { $match: { userId } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
+      { $group: { _id: null, total: { $sum: '$netAmount' } } },
     ]),
   ]);
 
@@ -143,7 +143,7 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
       SpecialReward.find({ userId }).lean()
         .then(docs => docs.map(d => ({
           type: 'special_rewards',
-          amount: d.amount,
+          amount: d.netAmount,
           detail: 'Admin grant',
           createdAt: d.createdAt,
         }))),
