@@ -41,12 +41,12 @@ class NetworkService {
 
     const downlineIds = await this.getAllDownlineIds(user._id);
 
-    const [networkNode, directReferrals, teamAgg] = await Promise.all([
+    const [networkNode, directReferrals, teamInvestAgg] = await Promise.all([
       networkRepository.findByUserId(user._id),
       networkRepository.countDirectChildren(user._id),
       User.aggregate([
         { $match: { _id: { $in: downlineIds } } },
-        { $group: { _id: null, totalSwpVolume: { $sum: '$totalSwpVolume' }, totalInvested: { $sum: '$totalInvested' } } },
+        { $group: { _id: null, totalInvested: { $sum: '$totalInvested' } } },
       ]),
     ]);
 
@@ -56,8 +56,8 @@ class NetworkService {
       level: networkNode?.level ?? 0,
       totalDownline: downlineIds.length,
       directReferrals,
-      teamSwpVolume: teamAgg[0]?.totalSwpVolume ?? 0,
-      teamInvestmentVolume: teamAgg[0]?.totalInvested ?? 0,
+      teamSwpVolume: user.totalSwpVolume,
+      teamInvestmentVolume: teamInvestAgg[0]?.totalInvested ?? 0,
     };
   }
 
