@@ -6,12 +6,13 @@ import MultiLevelReward from '../../models/MultiLevelReward';
 import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import SpecialReward from '../../models/SpecialReward';
+import PoolReward from '../../models/PoolReward';
 import { AuthRequest } from '../../types';
 
 export const getRewardWallet = catchAsync(async (req: Request, res: Response) => {
   const userId = (req as AuthRequest).user._id;
 
-  const [referralAgg, layeredAgg, rankAgg, royaltyAgg, specialAgg] = await Promise.all([
+  const [referralAgg, layeredAgg, rankAgg, royaltyAgg, specialAgg, poolAgg] = await Promise.all([
     Commission.aggregate([
       { $match: { earnerId: userId, level: 1 } },
       { $group: { _id: null, total: { $sum: '$netAmount' } } },
@@ -38,6 +39,10 @@ export const getRewardWallet = catchAsync(async (req: Request, res: Response) =>
       { $match: { userId } },
       { $group: { _id: null, total: { $sum: '$netAmount' } } },
     ]),
+    PoolReward.aggregate([
+      { $match: { userId } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
   ]);
 
   const referralIncome = referralAgg[0]?.total ?? 0;
@@ -45,8 +50,9 @@ export const getRewardWallet = catchAsync(async (req: Request, res: Response) =>
   const rankIncome = rankAgg[0]?.total ?? 0;
   const royaltyRewards = royaltyAgg[0]?.total ?? 0;
   const specialRewards = specialAgg[0]?.total ?? 0;
+  const poolRewards = poolAgg[0]?.total ?? 0;
 
-  const totalRewardWallet = referralIncome + layeredRewards + rankIncome + royaltyRewards + specialRewards;
+  const totalRewardWallet = referralIncome + layeredRewards + rankIncome + royaltyRewards + specialRewards + poolRewards;
 
   return ApiResponse.success(res, 'Reward wallet retrieved', {
     totalRewardWallet: Math.round(totalRewardWallet * 100) / 100,
@@ -56,6 +62,7 @@ export const getRewardWallet = catchAsync(async (req: Request, res: Response) =>
       rankIncome: Math.round(rankIncome * 100) / 100,
       royaltyRewards: Math.round(royaltyRewards * 100) / 100,
       specialRewards: Math.round(specialRewards * 100) / 100,
+      poolRewards: Math.round(poolRewards * 100) / 100,
     },
   });
 });
@@ -68,7 +75,7 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
 
   const typesToFetch = type
     ? [type]
-    : ['referral_income', 'layered_rewards', 'rank_income', 'royalty_rewards', 'special_rewards'];
+    : ['referral_income', 'layered_rewards', 'rank_income', 'royalty_rewards', 'special_rewards', 'pool_reward'];
 
   const queries: Promise<any[]>[] = [];
 
@@ -145,6 +152,18 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
           type: 'special_rewards',
           amount: d.netAmount,
           detail: 'Admin grant',
+          createdAt: d.createdAt,
+        }))),
+    );
+  }
+
+  if (typesToFetch.includes('pool_reward')) {
+    queries.push(
+      PoolReward.find({ userId }).lean()
+        .then(docs => docs.map(d => ({
+          type: 'pool_reward',
+          amount: d.amount,
+          detail: `Pool distribution (${d.percentage}% rate on ${d.swpBalance} SWP)`,
           createdAt: d.createdAt,
         }))),
     );

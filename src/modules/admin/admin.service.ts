@@ -17,6 +17,7 @@ import Transaction from '../../models/Transaction';
 import RoiDistribution from '../../models/RoiDistribution';
 import SpecialReward from '../../models/SpecialReward';
 import SystemFund, { getSystemFund } from '../../models/SystemFund';
+import PoolReward from '../../models/PoolReward';
 import { notifyEarning } from '../../utils/notifyEarning';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
@@ -461,26 +462,55 @@ class AdminService {
     const systemFund = await getSystemFund();
     if (systemFund.poolFund <= 0) throw ApiError.badRequest('Pool fund is empty');
 
-    const distributeAmount = (systemFund.poolFund * percentage) / 100;
-    if (distributeAmount <= 0) throw ApiError.badRequest('Distribution amount is zero');
+    const ratePerHundred = (systemFund.poolFund * percentage) / 100;
+    if (ratePerHundred <= 0) throw ApiError.badRequest('Distribution amount is zero');
 
-    const activeUsers = await User.find({ role: 'user', isBlocked: false }).select('_id');
-    if (activeUsers.length === 0) throw ApiError.badRequest('No active users to distribute to');
+    const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('_id swpBalance').lean();
+    if (activeUsers.length === 0) throw ApiError.badRequest('No active users with SWP packages to distribute to');
 
-    const perUserAmount = distributeAmount / activeUsers.length;
-    const userIds = activeUsers.map(u => u._id);
+    // Calculate per-user reward based on their SWP balance
+    const userRewards = activeUsers.map(u => ({
+      _id: u._id,
+      reward: Math.round(((u.swpBalance / 100) * ratePerHundred) * 100) / 100,
+    }));
 
-    await User.updateMany({ _id: { $in: userIds } }, { $inc: { walletBalance: perUserAmount } });
+    const totalRequired = userRewards.reduce((sum, u) => sum + u.reward, 0);
 
-    await SystemFund.findOneAndUpdate({}, { $inc: { poolFund: -distributeAmount } });
+    // Pre-check: ensure pool fund is sufficient
+    if (totalRequired > systemFund.poolFund) {
+      throw ApiError.badRequest(
+        `Insufficient pool fund. Required: $${totalRequired.toFixed(2)}, Available: $${systemFund.poolFund.toFixed(2)}. Need additional $${(totalRequired - systemFund.poolFund).toFixed(2)} in pool fund to distribute successfully for all ${activeUsers.length} users.`,
+      );
+    }
+
+    // Distribute to each user based on their SWP balance
+    const bulkOps = userRewards.map(u => ({
+      updateOne: {
+        filter: { _id: u._id },
+        update: { $inc: { walletBalance: u.reward } },
+      },
+    }));
+    await User.bulkWrite(bulkOps);
+
+    // Create per-user pool reward records
+    const poolRewardDocs = activeUsers.map((u, i) => ({
+      userId: u._id,
+      amount: userRewards[i].reward,
+      swpBalance: u.swpBalance,
+      ratePerHundred,
+      percentage,
+    }));
+    await PoolReward.insertMany(poolRewardDocs);
+
+    await SystemFund.findOneAndUpdate({}, { $inc: { poolFund: -totalRequired } });
 
     return {
       poolFundBefore: systemFund.poolFund,
-      poolFundAfter: systemFund.poolFund - distributeAmount,
+      poolFundAfter: Math.round((systemFund.poolFund - totalRequired) * 100) / 100,
       percentage,
-      distributedAmount: distributeAmount,
+      ratePerHundredSwp: Math.round(ratePerHundred * 100) / 100,
+      totalDistributed: Math.round(totalRequired * 100) / 100,
       activeUsers: activeUsers.length,
-      perUserAmount: Math.round(perUserAmount * 100) / 100,
     };
   }
 
