@@ -132,9 +132,20 @@ export const getRoiDistributionHistory = catchAsync(async (req: Request, res: Re
   return ApiResponse.paginated(res, 'ROI distribution history retrieved', distributions, pagination);
 });
 
+// Pool Config
+export const getPoolConfig = catchAsync(async (_req: Request, res: Response) => {
+  const config = await adminService.getPoolConfig();
+  return ApiResponse.success(res, 'Pool config retrieved successfully', config);
+});
+
+export const updatePoolConfig = catchAsync(async (req: Request, res: Response) => {
+  const config = await adminService.updatePoolConfig(req.body.percentage as number);
+  return ApiResponse.success(res, 'Pool config updated successfully', config);
+});
+
 // Distribute Pool Fund
 export const distributePoolFund = catchAsync(async (req: Request, res: Response) => {
-  const result = await adminService.distributePoolFund(req.body.percentage as number, (req as AuthRequest).user._id);
+  const result = await adminService.distributePoolFund((req as AuthRequest).user._id);
   return ApiResponse.success(res, 'Pool fund distributed successfully', result);
 });
 

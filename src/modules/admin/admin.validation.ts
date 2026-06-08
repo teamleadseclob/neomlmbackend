@@ -139,7 +139,7 @@ export const changeUserEmail: ValidationSchema = {
   }),
 };
 
-export const distributePoolFund: ValidationSchema = {
+export const updatePoolConfig: ValidationSchema = {
   body: Joi.object({
     percentage: Joi.number().min(0.01).max(100).required().messages({
       'number.min': 'Percentage must be at least 0.01',

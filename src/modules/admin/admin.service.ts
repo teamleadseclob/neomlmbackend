@@ -18,6 +18,7 @@ import RoiDistribution from '../../models/RoiDistribution';
 import SpecialReward from '../../models/SpecialReward';
 import SystemFund, { getSystemFund } from '../../models/SystemFund';
 import PoolReward from '../../models/PoolReward';
+import { IPoolConfig, getPoolConfig } from '../../models/PoolConfig';
 import { notifyEarning } from '../../utils/notifyEarning';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
@@ -458,7 +459,22 @@ class AdminService {
     return purchases;
   }
 
-  async distributePoolFund(percentage: number, adminId: Types.ObjectId) {
+  // Pool Config
+  async getPoolConfig(): Promise<IPoolConfig> {
+    return getPoolConfig();
+  }
+
+  async updatePoolConfig(percentage: number): Promise<IPoolConfig> {
+    const config = await getPoolConfig();
+    config.percentage = percentage;
+    await config.save();
+    return config;
+  }
+
+  async distributePoolFund(adminId: Types.ObjectId) {
+    const poolConfig = await getPoolConfig();
+    const percentage = poolConfig.percentage;
+
     const systemFund = await getSystemFund();
     if (systemFund.poolFund <= 0) throw ApiError.badRequest('Pool fund is empty');
 

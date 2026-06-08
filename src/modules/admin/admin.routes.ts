@@ -27,7 +27,9 @@ router.patch('/users/:id/block', validate(adminValidation.userIdParam), adminCon
 router.patch('/users/:id/unblock', validate(adminValidation.userIdParam), adminController.unblockUser);
 router.post('/users/:id/grant-swp', validate(adminValidation.adminGrantSwp), adminController.grantSwp);
 router.post('/users/:id/add-usdt', validate(adminValidation.addUsdtToWallet), adminController.addUsdtToWallet);
-router.post('/pool-fund/distribute', validate(adminValidation.distributePoolFund), adminController.distributePoolFund);
+router.get('/pool-config', adminController.getPoolConfig);
+router.patch('/pool-config', validate(adminValidation.updatePoolConfig), adminController.updatePoolConfig);
+router.post('/pool-fund/distribute', adminController.distributePoolFund);
 router.get('/swp-purchases/recent', adminController.getRecentSwpPurchases);
 
 // Network
