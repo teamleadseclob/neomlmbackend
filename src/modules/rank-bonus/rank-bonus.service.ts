@@ -5,12 +5,15 @@ import RankConfig from '../../models/RankConfig';
 import RankReward from '../../models/RankReward';
 import { creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
 import RankBonusReward from '../../models/RankBonusReward';
+import { getRankBonusAmountConfig, IRankBonusAmountConfig } from '../../models/RankBonusAmountConfig';
 import ApiError from '../../utils/ApiError';
 import logger from '../../config/logger';
 import { notifyEarning } from '../../utils/notifyEarning';
 
 class RankBonusService {
-  async distribute(amount: number, adminId: Types.ObjectId) {
+  async distribute(adminId: Types.ObjectId) {
+    const amountConfig = await getRankBonusAmountConfig();
+    const amount = amountConfig.amount;
     const configs = await RankBonusConfig.find().lean();
     if (configs.length === 0) throw ApiError.badRequest('No rank bonus configs found');
 
@@ -115,6 +118,16 @@ class RankBonusService {
       { new: true },
     );
     if (!config) throw ApiError.notFound(`Config for rank order ${rankOrder} not found`);
+    return config;
+  }
+  async getAmountConfig(): Promise<IRankBonusAmountConfig> {
+    return getRankBonusAmountConfig();
+  }
+
+  async updateAmountConfig(amount: number): Promise<IRankBonusAmountConfig> {
+    const config = await getRankBonusAmountConfig();
+    config.amount = amount;
+    await config.save();
     return config;
   }
 }

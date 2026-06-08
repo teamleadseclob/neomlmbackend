@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-export const distributeSchema = {
+export const updateAmountConfigSchema = {
   body: Joi.object({
     amount: Joi.number().positive().required(),
   }),
