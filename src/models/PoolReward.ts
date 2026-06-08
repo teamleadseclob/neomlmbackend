@@ -7,6 +7,7 @@ export interface IPoolReward extends Document {
   swpBalance: number;
   ratePerHundred: number;
   percentage: number;
+  distributedBy: Types.ObjectId;
   createdAt: Date;
 }
 
@@ -17,6 +18,7 @@ const poolRewardSchema = new Schema<IPoolReward>(
     swpBalance: { type: Number, required: true },
     ratePerHundred: { type: Number, required: true },
     percentage: { type: Number, required: true },
+    distributedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

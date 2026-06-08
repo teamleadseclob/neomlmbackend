@@ -7,6 +7,8 @@ import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import SpecialReward from '../../models/SpecialReward';
 import PoolReward from '../../models/PoolReward';
+import SwpPurchase from '../../models/SwpPurchase';
+import User from '../../models/User';
 import { AuthRequest } from '../../types';
 
 export const getRewardWallet = catchAsync(async (req: Request, res: Response) => {
@@ -180,4 +182,32 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
   return ApiResponse.paginated(res, 'Reward wallet history retrieved', history, {
     page, limit, totalDocs, totalPages, skip,
   });
+});
+
+export const getPoolFundHistory = catchAsync(async (req: Request, res: Response) => {
+  const userId = (req as AuthRequest).user._id;
+  const page = parseInt(req.query.page as string, 10) || 1;
+  const limit = parseInt(req.query.limit as string, 10) || 20;
+  const skip = (page - 1) * limit;
+
+  const [history, totalDocs, totalAgg, user, swpAgg] = await Promise.all([
+    PoolReward.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    PoolReward.countDocuments({ userId }),
+    PoolReward.aggregate([
+      { $match: { userId } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    User.findById(userId).select('swpBalance').lean(),
+    SwpPurchase.aggregate([
+      { $match: { userId } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+  ]);
+
+  return ApiResponse.paginated(res, 'Pool fund history retrieved', history, {
+    page, limit, totalDocs, totalPages: Math.ceil(totalDocs / limit), skip,
+    totalPoolFundEarned: Math.round((totalAgg[0]?.total ?? 0) * 100) / 100,
+    totalSwpPurchased: swpAgg[0]?.total ?? 0,
+    currentSwpBalance: user?.swpBalance ?? 0,
+  } as any);
 });

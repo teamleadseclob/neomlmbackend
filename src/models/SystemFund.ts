@@ -1,9 +1,9 @@
 import mongoose, { Schema, Model } from 'mongoose';
 
 export const FUND_PERCENTAGES = {
-  poolFund: 2,
-  managementFund: 3,
-  operationWalletFund: 5,
+  poolFund: 10,
+  managementFund: 30,
+  operationWalletFund: 10,
 } as const;
 
 interface ISystemFund {

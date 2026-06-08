@@ -92,6 +92,11 @@ const userSchema = new Schema<IUser>(
       default: 0,
       min: 0,
     },
+    totalPoolFundEarned: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     withdrawnAmount: {
       type: Number,
       default: 0,

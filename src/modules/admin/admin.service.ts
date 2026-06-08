@@ -458,7 +458,7 @@ class AdminService {
     return purchases;
   }
 
-  async distributePoolFund(percentage: number) {
+  async distributePoolFund(percentage: number, adminId: Types.ObjectId) {
     const systemFund = await getSystemFund();
     if (systemFund.poolFund <= 0) throw ApiError.badRequest('Pool fund is empty');
 
@@ -487,7 +487,7 @@ class AdminService {
     const bulkOps = userRewards.map(u => ({
       updateOne: {
         filter: { _id: u._id },
-        update: { $inc: { walletBalance: u.reward } },
+        update: { $inc: { walletBalance: u.reward, totalPoolFundEarned: u.reward } },
       },
     }));
     await User.bulkWrite(bulkOps);
@@ -499,6 +499,7 @@ class AdminService {
       swpBalance: u.swpBalance,
       ratePerHundred,
       percentage,
+      distributedBy: adminId,
     }));
     await PoolReward.insertMany(poolRewardDocs);
 

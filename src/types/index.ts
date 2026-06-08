@@ -20,6 +20,7 @@ export interface IUser extends Document {
   totalGrossEarnings: number;
   totalCutoffDeducted: number;
   totalEarnings: number;
+  totalPoolFundEarned: number;
   withdrawnAmount: number;
   lastWithdrawalDate: Date | null;
   isBlocked: boolean;

@@ -134,7 +134,7 @@ export const getRoiDistributionHistory = catchAsync(async (req: Request, res: Re
 
 // Distribute Pool Fund
 export const distributePoolFund = catchAsync(async (req: Request, res: Response) => {
-  const result = await adminService.distributePoolFund(req.body.percentage as number);
+  const result = await adminService.distributePoolFund(req.body.percentage as number, (req as AuthRequest).user._id);
   return ApiResponse.success(res, 'Pool fund distributed successfully', result);
 });
 
