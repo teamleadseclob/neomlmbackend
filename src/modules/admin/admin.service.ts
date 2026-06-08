@@ -471,23 +471,20 @@ class AdminService {
     return config;
   }
 
-  async distributePoolFund(adminId: Types.ObjectId) {
+  async distributePoolFund(_adminId: Types.ObjectId) {
     const poolConfig = await getPoolConfig();
     const percentage = poolConfig.percentage;
 
     const systemFund = await getSystemFund();
     if (systemFund.poolFund <= 0) throw ApiError.badRequest('Pool fund is empty');
 
-    const ratePerHundred = (systemFund.poolFund * percentage) / 100;
-    if (ratePerHundred <= 0) throw ApiError.badRequest('Distribution amount is zero');
-
     const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('_id swpBalance').lean();
     if (activeUsers.length === 0) throw ApiError.badRequest('No active users with SWP packages to distribute to');
 
-    // Calculate per-user reward based on their SWP balance
+    // Each user gets percentage% of their swpBalance
     const userRewards = activeUsers.map(u => ({
       _id: u._id,
-      reward: Math.round(((u.swpBalance / 100) * ratePerHundred) * 100) / 100,
+      reward: Math.round((u.swpBalance * percentage / 100) * 100) / 100,
     }));
 
     const totalRequired = userRewards.reduce((sum, u) => sum + u.reward, 0);
@@ -499,11 +496,11 @@ class AdminService {
       );
     }
 
-    // Distribute to each user based on their SWP balance
+    // Distribute to each user
     const bulkOps = userRewards.map(u => ({
       updateOne: {
         filter: { _id: u._id },
-        update: { $inc: { walletBalance: u.reward, totalPoolFundEarned: u.reward } },
+        update: { $inc: { walletBalance: u.reward } },
       },
     }));
     await User.bulkWrite(bulkOps);
@@ -513,9 +510,7 @@ class AdminService {
       userId: u._id,
       amount: userRewards[i].reward,
       swpBalance: u.swpBalance,
-      ratePerHundred,
       percentage,
-      distributedBy: adminId,
     }));
     await PoolReward.insertMany(poolRewardDocs);
 
@@ -525,7 +520,6 @@ class AdminService {
       poolFundBefore: systemFund.poolFund,
       poolFundAfter: Math.round((systemFund.poolFund - totalRequired) * 100) / 100,
       percentage,
-      ratePerHundredSwp: Math.round(ratePerHundred * 100) / 100,
       totalDistributed: Math.round(totalRequired * 100) / 100,
       activeUsers: activeUsers.length,
     };
