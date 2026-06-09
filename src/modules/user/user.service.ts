@@ -84,6 +84,7 @@ class UserService {
     phoneNumber?: string;
     address?: string;
     dob?: Date;
+    profileImage?: string;
   }): Promise<IUser> {
     const user = await User.findById(userId);
     if (!user) throw ApiError.notFound('User not found');
@@ -96,6 +97,7 @@ class UserService {
     if (updateData.phoneNumber !== undefined) user.phoneNumber = updateData.phoneNumber;
     if (updateData.address !== undefined) user.address = updateData.address;
     if (updateData.dob !== undefined) user.dob = updateData.dob;
+    if (updateData.profileImage !== undefined) user.profileImage = updateData.profileImage;
 
     await user.save();
     return user;

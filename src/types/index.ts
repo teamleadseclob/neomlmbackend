@@ -33,6 +33,7 @@ export interface IUser extends Document {
   phoneNumber: string | null;
   address: string | null;
   dob: Date | null;
+  profileImage: string | null;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;

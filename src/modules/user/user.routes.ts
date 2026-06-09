@@ -5,6 +5,7 @@ import * as userNotificationController from '../notification/user-notification.c
 import * as rewardWalletController from './reward-wallet.controller';
 import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
+import upload from '../../middlewares/upload';
 import * as userValidation from './user.validation';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.get('/me', userController.getProfile);
 router.get('/me/earning-limits', userController.getEarningLimits);
 router.get('/me/income-chart', validate(userValidation.incomeChart), userController.getIncomeChart);
 router.patch('/me', validate(userValidation.updateProfile), userController.updateProfile);
+router.post('/me/avatar', upload.single('profileImage'), userController.uploadAvatar);
 router.get('/referrals', userController.getDirectReferrals);
 router.post('/send-referral', validate(userValidation.sendReferral), userController.sendReferral);
 router.get('/reward-wallet', rewardWalletController.getRewardWallet);

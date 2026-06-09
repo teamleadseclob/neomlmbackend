@@ -157,6 +157,10 @@ const userSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
+    profileImage: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
