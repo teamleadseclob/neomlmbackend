@@ -120,8 +120,16 @@ class RankBonusService {
     if (!config) throw ApiError.notFound(`Config for rank order ${rankOrder} not found`);
     return config;
   }
-  async getAmountConfig(): Promise<IRankBonusAmountConfig> {
-    return getRankBonusAmountConfig();
+  async getAmountConfig() {
+    const config = await getRankBonusAmountConfig();
+    const lastDistribution = await RankBonusDistribution.findOne().sort({ createdAt: -1 }).select('totalDistributed createdAt').lean();
+
+    return {
+      amount: config.amount,
+      lastDistributedAmount: lastDistribution?.totalDistributed ?? 0,
+      lastDistributedAt: lastDistribution?.createdAt ?? null,
+      updatedAt: config.updatedAt,
+    };
   }
 
   async updateAmountConfig(amount: number): Promise<IRankBonusAmountConfig> {

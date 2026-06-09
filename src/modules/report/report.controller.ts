@@ -6,10 +6,17 @@ import reportService from './report.service';
 const VALID_FORMATS = ['pdf', 'excel'];
 const REPORT_TYPES: Record<string, (res: Response, query: any) => Promise<void>> = {
   transactions: (res, query) => reportService.generateTransactions(res, query),
+  'layered-rewards': (res, query) => reportService.generateLayeredRewards(res, query),
   'rank-rewards': (res, query) => reportService.generateRankRewards(res, query),
   'swp-packages': (res, query) => reportService.generateSwpPackages(res, query),
   'trading-capital-profit': (res, query) => reportService.generateTradingCapitalProfit(res, query),
   'multilevel-rewards': (res, query) => reportService.generateMultilevelRewards(res, query),
+  'royalty-rewards': (res, query) => reportService.generateRoyaltyRewards(res, query),
+  'special-rewards': (res, query) => reportService.generateSpecialRewards(res, query),
+  'pool-rewards': (res, query) => reportService.generatePoolRewards(res, query),
+  'management-fund': (res, query) => reportService.generateManagementFund(res, query),
+  'operation-fund': (res, query) => reportService.generateOperationFund(res, query),
+  'all-members': (res, query) => reportService.generateAllMembers(res, query),
   'approved-withdrawals': (res, query) => reportService.generateApprovedWithdrawals(res, query),
 };
 

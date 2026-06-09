@@ -1,4 +1,5 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+import FundHistory from './FundHistory';
 
 export const FUND_PERCENTAGES = {
   poolFund: 10,
@@ -29,13 +30,23 @@ export const getSystemFund = async (): Promise<ISystemFund> => {
   return fund;
 };
 
-export const creditFunds = async (purchaseAmount: number): Promise<void> => {
+export const creditFunds = async (purchaseAmount: number, userId?: Types.ObjectId): Promise<void> => {
   const inc = {
     poolFund: (purchaseAmount * FUND_PERCENTAGES.poolFund) / 100,
     managementFund: (purchaseAmount * FUND_PERCENTAGES.managementFund) / 100,
     operationWalletFund: (purchaseAmount * FUND_PERCENTAGES.operationWalletFund) / 100,
   };
   await SystemFund.findOneAndUpdate({}, { $inc: inc }, { upsert: true });
+
+  if (userId) {
+    await FundHistory.create({
+      userId,
+      swpPurchaseAmount: purchaseAmount,
+      poolFund: inc.poolFund,
+      managementFund: inc.managementFund,
+      operationWalletFund: inc.operationWalletFund,
+    });
+  }
 };
 
 export default SystemFund;

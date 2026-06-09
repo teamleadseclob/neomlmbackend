@@ -181,8 +181,15 @@ class AdminService {
     return adminRepository.createRoiConfig();
   }
 
-  async getRoiConfig(): Promise<IRoiConfig> {
-    return this.getOrCreateRoiConfig();
+  async getRoiConfig() {
+    const config = await this.getOrCreateRoiConfig();
+    const lastDistribution = await RoiDistribution.findOne().sort({ distributedAt: -1 }).select('totalRoiDistributed distributedAt').lean();
+
+    return {
+      ...config.toJSON(),
+      lastDistributedAmount: lastDistribution?.totalRoiDistributed ?? 0,
+      lastDistributedAt: lastDistribution?.distributedAt ?? null,
+    };
   }
 
   async updateRoiConfig(dailyRoiPercentage: number): Promise<IRoiConfig> {
@@ -460,8 +467,19 @@ class AdminService {
   }
 
   // Pool Config
-  async getPoolConfig(): Promise<IPoolConfig> {
-    return getPoolConfig();
+  async getPoolConfig() {
+    const config = await getPoolConfig();
+    const lastDistribution = await PoolReward.aggregate([
+      { $sort: { createdAt: -1 } },
+      { $limit: 1 },
+      { $group: { _id: '$createdAt', totalDistributed: { $sum: '$amount' } } },
+    ]);
+
+    return {
+      percentage: config.percentage,
+      lastDistributedAmount: lastDistribution[0]?.totalDistributed ?? 0,
+      updatedAt: config.updatedAt,
+    };
   }
 
   async updatePoolConfig(percentage: number): Promise<IPoolConfig> {

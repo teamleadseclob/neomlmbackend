@@ -61,8 +61,8 @@ class SwpService {
       transactionHash: transactionHash || null,
     });
 
-    // Credit system funds (pool 2%, management 3%, operation 5%)
-    await creditFunds(amount);
+    // Credit system funds (pool 10%, management 30%, operation 10%)
+    await creditFunds(amount, user._id);
 
     // Distribute commissions to upline
     await this.distributeCommissions(user._id, purchase._id, amount);
