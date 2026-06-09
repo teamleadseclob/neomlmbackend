@@ -201,9 +201,9 @@ class UserService {
       SpecialReward.findOne({ userId: userObjectId }).sort({ createdAt: -1 }).select('netAmount createdAt').lean(),
       PoolReward.aggregate([
         { $match: { userId: userObjectId } },
-        { $group: { _id: null, total: { $sum: '$amount' } } },
+        { $group: { _id: null, total: { $sum: '$netAmount' } } },
       ]),
-      PoolReward.findOne({ userId: userObjectId }).sort({ createdAt: -1 }).select('amount createdAt').lean(),
+      PoolReward.findOne({ userId: userObjectId }).sort({ createdAt: -1 }).select('netAmount createdAt').lean(),
     ]);
 
     const roiMonthly = roiMonthlyAgg[0]?.gross ?? 0;
@@ -236,7 +236,7 @@ class UserService {
       lastRank ? { amount: lastRank.netAmount, date: lastRank.createdAt, type: 'rank_income' } : null,
       lastRoyalty ? { amount: lastRoyalty.netAmount, date: lastRoyalty.createdAt, type: 'royalty_rewards' } : null,
       lastSpecial ? { amount: lastSpecial.netAmount, date: lastSpecial.createdAt, type: 'special_rewards' } : null,
-      lastPool ? { amount: lastPool.amount, date: lastPool.createdAt, type: 'pool_reward' } : null,
+      lastPool ? { amount: lastPool.netAmount, date: lastPool.createdAt, type: 'pool_reward' } : null,
     ].filter(Boolean);
     const lastEarnedTotal = allLastEarned.reduce((sum, e) => sum + e!.amount, 0);
     const lastEarnedOverall = { amount: Math.round(lastEarnedTotal * 100) / 100 };
@@ -265,7 +265,7 @@ class UserService {
           rankIncome: { total: Math.round(rankIncomeTotal * 100) / 100, lastEarned: lastRank ? { amount: lastRank.netAmount, date: lastRank.createdAt } : null },
           royaltyRewards: { total: Math.round(royaltyRewardsTotal * 100) / 100, lastEarned: lastRoyalty ? { amount: lastRoyalty.netAmount, date: lastRoyalty.createdAt } : null },
           specialRewards: { total: Math.round(specialRewardsTotal * 100) / 100, lastEarned: lastSpecial ? { amount: lastSpecial.netAmount, date: lastSpecial.createdAt } : null },
-          poolRewards: { total: Math.round(poolRewardsTotal * 100) / 100, lastEarned: lastPool ? { amount: lastPool.amount, date: lastPool.createdAt } : null },
+          poolRewards: { total: Math.round(poolRewardsTotal * 100) / 100, lastEarned: lastPool ? { amount: lastPool.netAmount, date: lastPool.createdAt } : null },
         },
       },
     };

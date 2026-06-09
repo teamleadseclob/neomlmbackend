@@ -19,6 +19,7 @@ import SpecialReward from '../../models/SpecialReward';
 import SystemFund, { getSystemFund } from '../../models/SystemFund';
 import PoolReward from '../../models/PoolReward';
 import { getPoolConfig } from '../../models/PoolConfig';
+import { calculateCutoff } from '../../utils/cutoff';
 import { notifyEarning } from '../../utils/notifyEarning';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
@@ -511,13 +512,14 @@ class AdminService {
     const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('_id swpBalance').lean();
     if (activeUsers.length === 0) throw ApiError.badRequest('No active users with SWP packages to distribute to');
 
-    // Each user gets percentage% of their swpBalance
-    const userRewards = activeUsers.map(u => ({
-      _id: u._id,
-      reward: Math.round((u.swpBalance * percentage / 100) * 100) / 100,
-    }));
+    // Each user gets percentage% of their swpBalance (with 5% cutoff)
+    const userRewards = activeUsers.map(u => {
+      const gross = Math.round((u.swpBalance * percentage / 100) * 100) / 100;
+      const { grossAmount, cutoffAmount, netAmount } = calculateCutoff(gross);
+      return { _id: u._id, gross: grossAmount, cutoff: cutoffAmount, net: netAmount };
+    });
 
-    const totalRequired = userRewards.reduce((sum, u) => sum + u.reward, 0);
+    const totalRequired = userRewards.reduce((sum, u) => sum + u.gross, 0);
 
     // Pre-check: ensure pool fund is sufficient
     if (totalRequired > systemFund.poolFund) {
@@ -526,19 +528,28 @@ class AdminService {
       );
     }
 
-    // Distribute to each user
+    // Distribute to each user (net amount after cutoff)
     const bulkOps = userRewards.map(u => ({
       updateOne: {
         filter: { _id: u._id },
-        update: { $inc: { walletBalance: u.reward } },
+        update: { $inc: { walletBalance: u.net, totalEarnings: u.net, totalGrossEarnings: u.gross, totalCutoffDeducted: u.cutoff } },
       },
     }));
     await User.bulkWrite(bulkOps);
 
+    // Credit admin with total cutoff
+    const totalCutoff = userRewards.reduce((sum, u) => sum + u.cutoff, 0);
+    if (totalCutoff > 0) {
+      await User.findOneAndUpdate({ role: 'admin' }, { $inc: { walletBalance: totalCutoff } });
+    }
+
     // Create per-user pool reward records
     const poolRewardDocs = activeUsers.map((u, i) => ({
       userId: u._id,
-      amount: userRewards[i].reward,
+      amount: userRewards[i].gross,
+      grossAmount: userRewards[i].gross,
+      cutoffAmount: userRewards[i].cutoff,
+      netAmount: userRewards[i].net,
       swpBalance: u.swpBalance,
       percentage,
     }));

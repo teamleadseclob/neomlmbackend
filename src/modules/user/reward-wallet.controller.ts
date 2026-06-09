@@ -43,7 +43,7 @@ export const getRewardWallet = catchAsync(async (req: Request, res: Response) =>
     ]),
     PoolReward.aggregate([
       { $match: { userId } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
+      { $group: { _id: null, total: { $sum: '$netAmount' } } },
     ]),
   ]);
 
@@ -164,7 +164,7 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
       PoolReward.find({ userId }).lean()
         .then(docs => docs.map(d => ({
           type: 'pool_reward',
-          amount: d.amount,
+          amount: d.netAmount,
           detail: `Pool distribution (${d.percentage}% rate on ${d.swpBalance} SWP)`,
           createdAt: d.createdAt,
         }))),
