@@ -4,6 +4,8 @@ export interface IMarketInterest extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   marketTitle: string;
+  status: 'pending' | 'accepted';
+  url: string | null;
   createdAt: Date;
 }
 
@@ -11,6 +13,8 @@ const marketInterestSchema = new Schema<IMarketInterest>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     marketTitle: { type: String, required: true, trim: true },
+    status: { type: String, enum: ['pending', 'accepted'], default: 'pending' },
+    url: { type: String, default: null },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

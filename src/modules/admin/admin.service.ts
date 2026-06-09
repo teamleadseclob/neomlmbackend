@@ -18,7 +18,7 @@ import RoiDistribution from '../../models/RoiDistribution';
 import SpecialReward from '../../models/SpecialReward';
 import SystemFund, { getSystemFund } from '../../models/SystemFund';
 import PoolReward from '../../models/PoolReward';
-import { IPoolConfig, getPoolConfig } from '../../models/PoolConfig';
+import { getPoolConfig } from '../../models/PoolConfig';
 import { notifyEarning } from '../../utils/notifyEarning';
 import { IUser, IRoiConfig, IMultiLevelRewardConfig, ILevelCommission, Pagination, NetworkStats } from '../../types';
 
@@ -482,7 +482,19 @@ class AdminService {
     };
   }
 
-  async updatePoolConfig(percentage: number): Promise<IPoolConfig> {
+  async updatePoolConfig(percentage: number): Promise<any> {
+    const systemFund = await getSystemFund();
+    const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('swpBalance').lean();
+
+    if (activeUsers.length > 0) {
+      const totalRequired = activeUsers.reduce((sum, u) => sum + Math.round((u.swpBalance * percentage / 100) * 100) / 100, 0);
+      if (totalRequired > systemFund.poolFund) {
+        throw ApiError.badRequest(
+          `Insufficient pool fund. Required: $${totalRequired.toFixed(2)}, Available: $${systemFund.poolFund.toFixed(2)}.`,
+        );
+      }
+    }
+
     const config = await getPoolConfig();
     config.percentage = percentage;
     await config.save();
@@ -510,7 +522,7 @@ class AdminService {
     // Pre-check: ensure pool fund is sufficient
     if (totalRequired > systemFund.poolFund) {
       throw ApiError.badRequest(
-        `Insufficient pool fund. Required: $${totalRequired.toFixed(2)}, Available: $${systemFund.poolFund.toFixed(2)}. Need additional $${(totalRequired - systemFund.poolFund).toFixed(2)} in pool fund to distribute successfully for all ${activeUsers.length} users.`,
+        `Insufficient pool fund. Required: $${totalRequired.toFixed(2)}, Available: $${systemFund.poolFund.toFixed(2)}.`,
       );
     }
 

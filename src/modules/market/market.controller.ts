@@ -12,6 +12,16 @@ export const expressInterest = catchAsync(async (req: Request, res: Response) =>
   return ApiResponse.created(res, 'Interest recorded successfully', result);
 });
 
+export const getUserInterests = catchAsync(async (req: Request, res: Response) => {
+  const result = await marketService.getUserInterests((req as AuthRequest).user._id);
+  return ApiResponse.success(res, 'Market interests retrieved', result);
+});
+
+export const acceptInterest = catchAsync(async (req: Request, res: Response) => {
+  const result = await marketService.acceptInterest(req.params.id as string, req.body.url);
+  return ApiResponse.success(res, 'Market interest accepted', result);
+});
+
 export const adminList = catchAsync(async (req: Request, res: Response) => {
   const result = await marketService.adminList(req.query as any);
   return ApiResponse.success(res, 'Market interests retrieved', result);
