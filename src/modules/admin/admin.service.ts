@@ -483,6 +483,33 @@ class AdminService {
     };
   }
 
+  async previewPoolDistribution(percentage: number) {
+    const systemFund = await getSystemFund();
+    if (systemFund.poolFund <= 0) throw ApiError.badRequest('Pool fund is empty');
+
+    const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('swpBalance').lean();
+    if (activeUsers.length === 0) throw ApiError.badRequest('No active users with SWP packages to distribute to');
+
+    const totalRequired = activeUsers.reduce((sum, u) => {
+      const gross = Math.round((u.swpBalance * percentage / 100) * 100) / 100;
+      return sum + gross;
+    }, 0);
+
+    const sufficient = totalRequired <= systemFund.poolFund;
+
+    return {
+      percentage,
+      poolFundBalance: systemFund.poolFund,
+      totalDeduction: Math.round(totalRequired * 100) / 100,
+      remainingBalance: Math.round((systemFund.poolFund - totalRequired) * 100) / 100,
+      activeUsers: activeUsers.length,
+      sufficient,
+      message: sufficient
+        ? `$${totalRequired.toFixed(2)} will be deducted from pool fund. Remaining: $${(systemFund.poolFund - totalRequired).toFixed(2)}.`
+        : `Insufficient pool fund. Required: $${totalRequired.toFixed(2)}, Available: $${systemFund.poolFund.toFixed(2)}.`,
+    };
+  }
+
   async updatePoolConfig(percentage: number): Promise<any> {
     const systemFund = await getSystemFund();
     const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('swpBalance').lean();

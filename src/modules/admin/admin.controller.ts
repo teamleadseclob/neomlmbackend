@@ -143,6 +143,11 @@ export const updatePoolConfig = catchAsync(async (req: Request, res: Response) =
   return ApiResponse.success(res, 'Pool config updated successfully', config);
 });
 
+export const previewPoolDistribution = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.previewPoolDistribution(req.query.percentage ? parseFloat(req.query.percentage as string) : 0);
+  return ApiResponse.success(res, 'Pool distribution preview', result);
+});
+
 // Distribute Pool Fund
 export const distributePoolFund = catchAsync(async (req: Request, res: Response) => {
   const result = await adminService.distributePoolFund((req as AuthRequest).user._id);
