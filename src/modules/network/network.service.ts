@@ -13,16 +13,14 @@ class NetworkService {
     return this.buildTree(user._id);
   }
 
-  private async buildTree(userObjectId: Types.ObjectId, depth = 0, maxDepth = 10): Promise<TreeNode | null> {
-    if (depth >= maxDepth) return null;
-
+  private async buildTree(userObjectId: Types.ObjectId): Promise<TreeNode | null> {
     const user = await User.findById(userObjectId).select('name email userId');
     if (!user) return null;
 
     const childNodes = await Network.find({ parentId: userObjectId });
 
     const children = await Promise.all(
-      childNodes.map((node) => this.buildTree(node.userId, depth + 1, maxDepth)),
+      childNodes.map((node) => this.buildTree(node.userId)),
     );
 
     return {
@@ -30,7 +28,7 @@ class NetworkService {
       name: user.name,
       email: user.email,
       userId: user.userId,
-      level: depth,
+      level: 0,
       children: children.filter((c): c is TreeNode => c !== null),
     };
   }
