@@ -34,6 +34,14 @@ export const uploadAvatar = catchAsync(async (req, res: Response) => {
   return ApiResponse.success(res, 'Profile image uploaded successfully', { url });
 });
 
+export const uploadFile = catchAsync(async (req, res: Response) => {
+  if (!req.file) {
+    throw new ApiError(400, 'No file uploaded');
+  }
+  const url = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  return ApiResponse.success(res, 'File uploaded successfully', { url });
+});
+
 export const getUserById = catchAsync(async (req, res: Response) => {
   const user = await userService.getUserByUserId(req.params.userId as string);
   return ApiResponse.success(res, 'User retrieved successfully', user);

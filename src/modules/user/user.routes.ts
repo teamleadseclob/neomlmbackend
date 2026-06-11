@@ -18,6 +18,7 @@ router.get('/me/earning-limits', userController.getEarningLimits);
 router.get('/me/income-chart', validate(userValidation.incomeChart), userController.getIncomeChart);
 router.patch('/me', validate(userValidation.updateProfile), userController.updateProfile);
 router.post('/me/avatar', upload.single('profileImage'), userController.uploadAvatar);
+router.post('/upload', upload.single('file'), userController.uploadFile);
 router.get('/referrals', userController.getDirectReferrals);
 router.post('/send-referral', validate(userValidation.sendReferral), userController.sendReferral);
 router.get('/reward-wallet', rewardWalletController.getRewardWallet);

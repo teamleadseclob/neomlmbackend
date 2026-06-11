@@ -36,6 +36,7 @@ class SupportService {
     priority: 'low' | 'high';
     subject: string;
     message: string;
+    image?: string;
   }): Promise<ISupportTicket> {
     return SupportTicket.create({
       userId,
@@ -44,6 +45,7 @@ class SupportService {
       priority: data.priority,
       subject: data.subject,
       message: data.message,
+      image: data.image || null,
     });
   }
 

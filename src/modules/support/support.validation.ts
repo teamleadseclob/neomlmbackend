@@ -38,6 +38,7 @@ export const createTicket: ValidationSchema = {
       'string.max': 'Message cannot exceed 5000 characters',
       'any.required': 'Message is required',
     }),
+    image: Joi.string().uri().optional().allow(null, ''),
   }),
 };
 

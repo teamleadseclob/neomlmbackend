@@ -14,6 +14,7 @@ export interface ISupportTicket extends Document {
   priority: 'low' | 'high';
   subject: string;
   message: string;
+  image: string | null;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   adminReply: string | null;
   resolvedAt: Date | null;
@@ -80,6 +81,10 @@ const supportTicketSchema = new Schema<ISupportTicket>(
       required: [true, 'Message is required'],
       trim: true,
       maxlength: [5000, 'Message cannot exceed 5000 characters'],
+    },
+    image: {
+      type: String,
+      default: null,
     },
     status: {
       type: String,
