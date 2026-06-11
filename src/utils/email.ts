@@ -13,6 +13,11 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendOtpEmail = async (to: string, otp: string): Promise<void> => {
+  if (env.isDevelopment()) {
+    logger.info({ to, otp }, 'DEV MODE — OTP (not emailed)');
+    return;
+  }
+
   const mailOptions = {
     from: `"${env.smtp.fromName}" <${env.smtp.fromEmail}>`,
     to,
@@ -41,6 +46,7 @@ export const sendOtpEmail = async (to: string, otp: string): Promise<void> => {
 };
 
 export const generateOtp = (): string => {
+  if (env.isDevelopment()) return '123456';
   const digits = env.otp.length;
   const min = Math.pow(10, digits - 1);
   const max = Math.pow(10, digits) - 1;
