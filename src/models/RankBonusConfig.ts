@@ -23,8 +23,8 @@ const RankBonusConfig: Model<IRankBonusConfig> = mongoose.model<IRankBonusConfig
 );
 
 export const DEFAULT_RANK_BONUS_CONFIGS = [
-  { rankOrder: 4, percentage: 5 },
-  { rankOrder: 5, percentage: 10 },
+  { rankOrder: 4, percentage: 1 },
+  { rankOrder: 5, percentage: 2 },
 ];
 
 export const seedRankBonusConfigs = async (): Promise<void> => {
