@@ -14,7 +14,7 @@ class RankBonusService {
   async distribute(adminId: Types.ObjectId) {
     const amountConfig = await getRankBonusAmountConfig();
     const amount = amountConfig.amount;
-    const configs = await RankBonusConfig.find().lean();
+    const configs = await RankBonusConfig.find().sort({ rankOrder: -1 }).lean();
     if (configs.length === 0) throw ApiError.badRequest('No rank bonus configs found');
 
     const rankOrders = configs.map((c) => c.rankOrder);
@@ -30,14 +30,17 @@ class RankBonusService {
 
     const breakdown: IRankBonusDistribution['breakdown'] = [];
     let totalDistributed = 0;
+    const processedUserIds = new Set<string>();
 
     for (const config of configs) {
       const rank = rankMap.get(config.rankOrder);
       if (!rank) continue;
 
-      // Find all users who achieved this rank
+      // Find all users who achieved this rank, exclude those already processed at a higher rank
       const rewards = await RankReward.find({ rankConfigId: rank._id }).select('userId').lean();
-      const userIds = rewards.map((r) => r.userId);
+      const userIds = [...new Set(rewards.map((r) => r.userId.toString()))]
+        .filter(uid => !processedUserIds.has(uid));
+
       if (userIds.length === 0) {
         breakdown.push({
           rankOrder: config.rankOrder,
@@ -50,14 +53,17 @@ class RankBonusService {
         continue;
       }
 
+      // Mark these users as processed so they don't get lower rank rewards
+      userIds.forEach(uid => processedUserIds.add(uid));
+
       const perUserAmount = Math.round((amount * config.percentage) / 100 * 100) / 100;
       const cutoffInfo = calculateCutoff(perUserAmount);
 
       // Credit each user and create per-user reward log
       for (const userId of userIds) {
-        await creditWithCutoff(userId, perUserAmount);
+        await creditWithCutoff(new Types.ObjectId(userId), perUserAmount);
         await RankBonusReward.create({
-          userId,
+          userId: new Types.ObjectId(userId),
           distributionId: distribution._id,
           rankOrder: config.rankOrder,
           rankName: rank.name,
