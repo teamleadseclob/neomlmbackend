@@ -71,7 +71,7 @@ class RankBonusService {
           cutoffAmount: cutoffInfo.cutoffAmount,
           netAmount: cutoffInfo.netAmount,
         });
-        await notifyEarning(userId, 'royalty_rewards', cutoffInfo.netAmount, rank.name);
+        await notifyEarning(userId as any, 'royalty_rewards', cutoffInfo.netAmount, rank.name);
       }
 
       const rankTotal = Math.round(perUserAmount * userIds.length * 100) / 100;

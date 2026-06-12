@@ -3,7 +3,7 @@ import path from 'path';
 import multer from 'multer';
 import ApiError from '../utils/ApiError';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const UPLOAD_DIR = path.join(__dirname, '../../uploads');
 
@@ -25,7 +25,7 @@ const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterC
   if (ALLOWED_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(ApiError.badRequest('Only JPEG, PNG, WebP, and GIF images are allowed'));
+    cb(ApiError.badRequest('Only JPEG, PNG, WebP, GIF images and PDF files are allowed'));
   }
 };
 

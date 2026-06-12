@@ -9,6 +9,7 @@ const contestSchema = Joi.object({
   description: Joi.string().trim().max(2000).required(),
   imageUrl: Joi.string().uri().trim().optional(),
   mediaUrl: Joi.string().uri().trim().optional(),
+  pdfUrl: Joi.string().uri().trim().optional(),
   startDate: Joi.date().iso().required(),
   endDate: Joi.date().iso().greater(Joi.ref('startDate')).required().messages({
     'date.greater': 'End date must be after start date',
@@ -22,6 +23,7 @@ const learningPackageSchema = Joi.object({
   description: Joi.string().trim().max(2000).required(),
   imageUrl: Joi.string().uri().trim().optional(),
   mediaUrl: Joi.string().uri().trim().optional(),
+  pdfUrl: Joi.string().uri().trim().optional(),
   price: Joi.number().min(0).required(),
   duration: Joi.string().trim().required(),
   accessLevel: Joi.string().valid(...ACCESS_LEVELS).required(),
@@ -35,6 +37,7 @@ const toolsSchema = Joi.object({
   description: Joi.string().trim().max(2000).required(),
   imageUrl: Joi.string().uri().trim().optional(),
   mediaUrl: Joi.string().uri().trim().optional(),
+  pdfUrl: Joi.string().uri().trim().optional(),
   accessLevel: Joi.string().valid(...ACCESS_LEVELS).required(),
   status: Joi.string().valid(...STATUS_OPTIONS).default('active'),
 });
@@ -66,6 +69,7 @@ export const updateEvent: ValidationSchema = {
     description: Joi.string().trim().max(2000).optional(),
     imageUrl: Joi.string().uri().trim().allow(null, '').optional(),
     mediaUrl: Joi.string().uri().trim().allow(null, '').optional(),
+    pdfUrl: Joi.string().uri().trim().allow(null, '').optional(),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().optional(),
     packageName: Joi.string().trim().max(200).optional(),

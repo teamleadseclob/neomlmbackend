@@ -18,6 +18,7 @@ export interface IEvent extends Document {
   type: EventType;
   imageUrl?: string;
   mediaUrl?: string;
+  pdfUrl?: string;
   description: string;
   createdBy: Types.ObjectId;
   createdAt: Date;
@@ -58,6 +59,7 @@ const eventSchema = new Schema<IEvent>(
     },
     imageUrl: { type: String, trim: true, default: null },
     mediaUrl: { type: String, trim: true, default: null },
+    pdfUrl: { type: String, trim: true, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
     // Contest
