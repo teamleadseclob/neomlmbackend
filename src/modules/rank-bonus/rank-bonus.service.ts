@@ -21,6 +21,13 @@ class RankBonusService {
     const ranks = await RankConfig.find({ order: { $in: rankOrders }, isActive: true }).lean();
     const rankMap = new Map(ranks.map((r) => [r.order, r]));
 
+    const distribution = await RankBonusDistribution.create({
+      amount,
+      distributedBy: adminId,
+      breakdown: [],
+      totalDistributed: 0,
+    });
+
     const breakdown: IRankBonusDistribution['breakdown'] = [];
     let totalDistributed = 0;
 
@@ -51,7 +58,7 @@ class RankBonusService {
         await creditWithCutoff(userId, perUserAmount);
         await RankBonusReward.create({
           userId,
-          distributionId: null, // will be updated after distribution is created
+          distributionId: distribution._id,
           rankOrder: config.rankOrder,
           rankName: rank.name,
           grossAmount: cutoffInfo.grossAmount,
@@ -79,18 +86,10 @@ class RankBonusService {
       );
     }
 
-    const distribution = await RankBonusDistribution.create({
-      amount,
-      distributedBy: adminId,
-      breakdown,
-      totalDistributed,
-    });
-
-    // Update distributionId on all reward docs created in this batch
-    await RankBonusReward.updateMany(
-      { distributionId: null },
-      { distributionId: distribution._id },
-    );
+    // Update distribution with final breakdown and total
+    distribution.breakdown = breakdown;
+    distribution.totalDistributed = totalDistributed;
+    await distribution.save();
 
     return distribution;
   }
