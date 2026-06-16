@@ -536,15 +536,23 @@ class AdminService {
     const systemFund = await getSystemFund();
     if (systemFund.poolFund <= 0) throw ApiError.badRequest('Pool fund is empty');
 
-    const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('_id swpBalance').lean();
+    const activeUsers = await User.find({ role: 'user', isBlocked: false, swpBalance: { $gt: 0 } }).select('_id swpBalance totalPoolFundEarned').lean();
     if (activeUsers.length === 0) throw ApiError.badRequest('No active users with SWP packages to distribute to');
 
-    // Each user gets percentage% of their swpBalance (with 5% cutoff)
+    // Each user gets percentage% of their swpBalance (with 5% cutoff), capped at swpBalance total
     const userRewards = activeUsers.map(u => {
-      const gross = Math.round((u.swpBalance * percentage / 100) * 100) / 100;
+      const alreadyEarned = u.totalPoolFundEarned ?? 0;
+      const cap = u.swpBalance;
+      const remaining = Math.max(cap - alreadyEarned, 0);
+
+      if (remaining <= 0) return { _id: u._id, gross: 0, cutoff: 0, net: 0, capped: true };
+
+      let gross = Math.round((u.swpBalance * percentage / 100) * 100) / 100;
+      if (gross > remaining) gross = Math.round(remaining * 100) / 100;
+
       const { grossAmount, cutoffAmount, netAmount } = calculateCutoff(gross);
-      return { _id: u._id, gross: grossAmount, cutoff: cutoffAmount, net: netAmount };
-    });
+      return { _id: u._id, gross: grossAmount, cutoff: cutoffAmount, net: netAmount, capped: false };
+    }).filter(u => u.gross > 0);
 
     const totalRequired = userRewards.reduce((sum, u) => sum + u.gross, 0);
 
@@ -559,7 +567,7 @@ class AdminService {
     const bulkOps = userRewards.map(u => ({
       updateOne: {
         filter: { _id: u._id },
-        update: { $inc: { walletBalance: u.net, totalEarnings: u.net, totalGrossEarnings: u.gross, totalCutoffDeducted: u.cutoff } },
+        update: { $inc: { walletBalance: u.net, totalEarnings: u.net, totalGrossEarnings: u.gross, totalCutoffDeducted: u.cutoff, totalPoolFundEarned: u.gross } },
       },
     }));
     await User.bulkWrite(bulkOps);
@@ -571,15 +579,19 @@ class AdminService {
     }
 
     // Create per-user pool reward records
-    const poolRewardDocs = activeUsers.map((u, i) => ({
-      userId: u._id,
-      amount: userRewards[i].gross,
-      grossAmount: userRewards[i].gross,
-      cutoffAmount: userRewards[i].cutoff,
-      netAmount: userRewards[i].net,
-      swpBalance: u.swpBalance,
-      percentage,
-    }));
+    const rewardUsers = activeUsers.filter(u => userRewards.some(r => r._id.equals(u._id)));
+    const poolRewardDocs = rewardUsers.map(u => {
+      const reward = userRewards.find(r => r._id.equals(u._id))!;
+      return {
+        userId: u._id,
+        amount: reward.gross,
+        grossAmount: reward.gross,
+        cutoffAmount: reward.cutoff,
+        netAmount: reward.net,
+        swpBalance: u.swpBalance,
+        percentage,
+      };
+    });
     await PoolReward.insertMany(poolRewardDocs);
 
     await SystemFund.findOneAndUpdate({}, { $inc: { poolFund: -totalRequired } });
