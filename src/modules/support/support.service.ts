@@ -167,6 +167,15 @@ class SupportService {
     await ticket.save();
     return ticket;
   }
+
+  async getAdminTicketCounts() {
+    const unread = await SupportTicket.countDocuments({ isRead: false });
+    return { unread };
+  }
+
+  async markAllTicketsAsRead() {
+    await SupportTicket.updateMany({ isRead: false }, { isRead: true });
+  }
 }
 
 export default new SupportService();

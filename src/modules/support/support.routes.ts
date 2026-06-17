@@ -17,6 +17,8 @@ const adminRouter = Router();
 
 adminRouter.use(auth as any, authorize('admin') as any);
 
+adminRouter.get('/tickets/counts', supportController.getAdminTicketCounts);
+adminRouter.patch('/tickets/read-all', supportController.markAllTicketsAsRead);
 adminRouter.get('/tickets', validate(supportValidation.getAdminTickets), supportController.getAdminTickets);
 adminRouter.get('/tickets/:ticketId', validate(supportValidation.ticketIdParam), supportController.getAdminTicketById);
 adminRouter.patch('/tickets/:ticketId', validate(supportValidation.updateTicketStatus), supportController.updateTicketStatus);

@@ -17,6 +17,7 @@ export interface ISupportTicket extends Document {
   image: string | null;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   adminReply: string | null;
+  isRead: boolean;
   resolvedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -96,6 +97,10 @@ const supportTicketSchema = new Schema<ISupportTicket>(
       default: null,
       trim: true,
       maxlength: [5000, 'Reply cannot exceed 5000 characters'],
+    },
+    isRead: {
+      type: Boolean,
+      default: false,
     },
     resolvedAt: {
       type: Date,

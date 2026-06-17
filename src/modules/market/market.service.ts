@@ -49,6 +49,15 @@ class MarketService {
       pagination: { page, limit, totalDocs, totalPages: Math.ceil(totalDocs / limit) },
     };
   }
+
+  async getUnreadCount() {
+    const unread = await MarketInterest.countDocuments({ isRead: false });
+    return { unread };
+  }
+
+  async markAllAsRead() {
+    await MarketInterest.updateMany({ isRead: false }, { isRead: true });
+  }
 }
 
 export default new MarketService();

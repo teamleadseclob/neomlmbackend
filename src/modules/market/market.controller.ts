@@ -26,3 +26,13 @@ export const adminList = catchAsync(async (req: Request, res: Response) => {
   const result = await marketService.adminList(req.query as any);
   return ApiResponse.success(res, 'Market interests retrieved', result);
 });
+
+export const getUnreadCount = catchAsync(async (_req: Request, res: Response) => {
+  const result = await marketService.getUnreadCount();
+  return ApiResponse.success(res, 'Unread count retrieved', result);
+});
+
+export const markAllAsRead = catchAsync(async (_req: Request, res: Response) => {
+  await marketService.markAllAsRead();
+  return ApiResponse.success(res, 'All market interests marked as read');
+});

@@ -6,6 +6,7 @@ export interface IMarketInterest extends Document {
   marketTitle: string;
   status: 'pending' | 'accepted';
   url: string | null;
+  isRead: boolean;
   createdAt: Date;
 }
 
@@ -15,6 +16,7 @@ const marketInterestSchema = new Schema<IMarketInterest>(
     marketTitle: { type: String, required: true, trim: true },
     status: { type: String, enum: ['pending', 'accepted'], default: 'pending' },
     url: { type: String, default: null },
+    isRead: { type: Boolean, default: false },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

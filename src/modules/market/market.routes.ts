@@ -15,6 +15,8 @@ userRouter.get('/interests', marketController.getUserInterests);
 
 // ─── Admin Routes ───
 adminRouter.use(auth as any, authorize('admin') as any);
+adminRouter.get('/interests/counts', marketController.getUnreadCount);
+adminRouter.patch('/interests/read-all', marketController.markAllAsRead);
 adminRouter.get('/interests', validate(marketValidation.adminList), marketController.adminList);
 adminRouter.patch('/interests/:id/accept', validate(marketValidation.acceptInterest), marketController.acceptInterest);
 

@@ -54,3 +54,13 @@ export const updateTicketStatus = catchAsync(async (req: Request, res: Response)
   const ticket = await supportService.updateTicketStatus(req.params.ticketId as string, req.body);
   return ApiResponse.success(res, 'Ticket updated successfully', ticket);
 });
+
+export const getAdminTicketCounts = catchAsync(async (_req: Request, res: Response) => {
+  const counts = await supportService.getAdminTicketCounts();
+  return ApiResponse.success(res, 'Ticket counts retrieved', counts);
+});
+
+export const markAllTicketsAsRead = catchAsync(async (_req: Request, res: Response) => {
+  await supportService.markAllTicketsAsRead();
+  return ApiResponse.success(res, 'All tickets marked as read');
+});
