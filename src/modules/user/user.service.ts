@@ -234,9 +234,8 @@ class UserService {
       lastRoyalty ? { amount: lastRoyalty.netAmount, date: lastRoyalty.createdAt, type: 'royalty_rewards' } : null,
       lastSpecial ? { amount: lastSpecial.netAmount, date: lastSpecial.createdAt, type: 'special_rewards' } : null,
       lastPool ? { amount: lastPool.netAmount, date: lastPool.createdAt, type: 'pool_reward' } : null,
-    ].filter(Boolean);
-    const lastEarnedTotal = allLastEarned.reduce((sum, e) => sum + e!.amount, 0);
-    const lastEarnedOverall = { amount: Math.round(lastEarnedTotal * 100) / 100 };
+    ].filter(Boolean).sort((a, b) => new Date(b!.date).getTime() - new Date(a!.date).getTime());
+    const lastEarnedOverall = allLastEarned[0] ?? null;
 
     return {
       walletBalance: user.walletBalance,
