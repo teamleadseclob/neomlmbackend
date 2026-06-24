@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import catchAsync from '../../utils/catchAsync';
 import ApiResponse from '../../utils/ApiResponse';
 import Commission from '../../models/Commission';
-import MultiLevelReward from '../../models/MultiLevelReward';
 import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import SpecialReward from '../../models/SpecialReward';
@@ -22,13 +21,7 @@ export const getRewardWallet = catchAsync(async (req: Request, res: Response) =>
     Commission.aggregate([
       { $match: { earnerId: userId, level: { $gt: 1 } } },
       { $group: { _id: null, total: { $sum: '$netAmount' } } },
-    ]).then(async (commResult) => {
-      const mlrResult = await MultiLevelReward.aggregate([
-        { $match: { earnerId: userId } },
-        { $group: { _id: null, total: { $sum: '$netAmount' } } },
-      ]);
-      return (commResult[0]?.total ?? 0) + (mlrResult[0]?.total ?? 0);
-    }),
+    ]).then(commResult => commResult[0]?.total ?? 0),
     RankReward.aggregate([
       { $match: { userId } },
       { $group: { _id: null, total: { $sum: '$netAmount' } } },
@@ -106,18 +99,6 @@ export const getRewardWalletHistory = catchAsync(async (req: Request, res: Respo
           amount: d.netAmount,
           fromUser: d.fromUserId ? { _id: (d.fromUserId as any)._id, name: (d.fromUserId as any).name, userId: (d.fromUserId as any).userId } : null,
           detail: `Level ${d.level} from ${(d.fromUserId as any)?.name || 'User'}`,
-          createdAt: d.createdAt,
-        }))),
-    );
-    queries.push(
-      MultiLevelReward.find({ earnerId: userId })
-        .populate('fromUserId', 'name userId')
-        .lean()
-        .then(docs => docs.map(d => ({
-          type: 'layered_rewards',
-          amount: d.netAmount,
-          fromUser: d.fromUserId ? { _id: (d.fromUserId as any)._id, name: (d.fromUserId as any).name, userId: (d.fromUserId as any).userId } : null,
-          detail: `MLR Level ${d.level} from ${(d.fromUserId as any)?.name || 'User'}`,
           createdAt: d.createdAt,
         }))),
     );

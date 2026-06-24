@@ -6,39 +6,37 @@ const contestSchema = Joi.object({
   type: Joi.string().valid('contest').required(),
   title: Joi.string().trim().max(200).required(),
   subTitle: Joi.string().trim().max(300).optional(),
-  description: Joi.string().trim().max(2000).required(),
+  description: Joi.string().trim().max(2000).optional(),
   imageUrl: Joi.string().uri().trim().optional(),
   mediaUrl: Joi.string().uri().trim().optional(),
   pdfUrl: Joi.string().uri().trim().optional(),
-  startDate: Joi.date().iso().required(),
-  endDate: Joi.date().iso().greater(Joi.ref('startDate')).required().messages({
-    'date.greater': 'End date must be after start date',
-  }),
+  startDate: Joi.date().iso().optional(),
+  endDate: Joi.date().iso().optional(),
 });
 
 const learningPackageSchema = Joi.object({
   type: Joi.string().valid('learning_package').required(),
   packageName: Joi.string().trim().max(200).required(),
-  category: Joi.string().valid(...CATEGORIES).required(),
-  description: Joi.string().trim().max(2000).required(),
+  category: Joi.string().valid(...CATEGORIES).optional(),
+  description: Joi.string().trim().max(2000).optional(),
   imageUrl: Joi.string().uri().trim().optional(),
   mediaUrl: Joi.string().uri().trim().optional(),
   pdfUrl: Joi.string().uri().trim().optional(),
-  price: Joi.number().min(0).required(),
-  duration: Joi.string().trim().required(),
-  accessLevel: Joi.string().valid(...ACCESS_LEVELS).required(),
+  price: Joi.number().min(0).optional(),
+  duration: Joi.string().trim().optional(),
+  accessLevel: Joi.string().valid(...ACCESS_LEVELS).optional(),
   status: Joi.string().valid(...STATUS_OPTIONS).default('active'),
 });
 
 const toolsSchema = Joi.object({
   type: Joi.string().valid('tools').required(),
   toolName: Joi.string().trim().max(200).required(),
-  toolType: Joi.string().trim().max(100).required(),
-  description: Joi.string().trim().max(2000).required(),
+  toolType: Joi.string().trim().max(100).optional(),
+  description: Joi.string().trim().max(2000).optional(),
   imageUrl: Joi.string().uri().trim().optional(),
   mediaUrl: Joi.string().uri().trim().optional(),
   pdfUrl: Joi.string().uri().trim().optional(),
-  accessLevel: Joi.string().valid(...ACCESS_LEVELS).required(),
+  accessLevel: Joi.string().valid(...ACCESS_LEVELS).optional(),
   status: Joi.string().valid(...STATUS_OPTIONS).default('active'),
 });
 
