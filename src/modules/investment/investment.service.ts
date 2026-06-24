@@ -6,6 +6,7 @@ import Commission from '../../models/Commission';
 import RoiHistory from '../../models/RoiHistory';
 import MultiLevelReward from '../../models/MultiLevelReward';
 import { MIN_INVESTMENT } from '../../models/SwpPurchase';
+import { recalculateCaps } from '../../models/EarningProgress';
 
 class InvestmentService {
   async invest(userId: Types.ObjectId, input: {
@@ -60,6 +61,9 @@ class InvestmentService {
       walletAddress: walletAddress || null,
       transactionHash: transactionHash || null,
     });
+
+    // Recalculate earning caps based on new total invested
+    await recalculateCaps(user._id, investedAfter);
 
     return {
       investment: {

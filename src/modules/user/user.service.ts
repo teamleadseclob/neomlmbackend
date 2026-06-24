@@ -11,12 +11,11 @@ import RankReward from '../../models/RankReward';
 import RankBonusReward from '../../models/RankBonusReward';
 import SpecialReward from '../../models/SpecialReward';
 import PoolReward from '../../models/PoolReward';
+import { getEarningProgress } from '../../models/EarningProgress';
 import { IUser, Pagination, PaginationQuery } from '../../types';
 import { sendReferralEmail } from '../../utils/email';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-const CAP_MULTIPLIER = 2;
 
 class UserService {
   async getEarningLimits(userObjectId: Types.ObjectId) {
@@ -25,10 +24,11 @@ class UserService {
     );
     if (!user) throw ApiError.notFound('User not found');
 
-    const roiCap = user.totalInvested * CAP_MULTIPLIER;
-    const mlrCap = user.totalInvested * CAP_MULTIPLIER;
-    const isRoiCapReached = user.totalRoiEarned >= roiCap;
-    const isMlrCapReached = user.totalMultiLevelEarned >= mlrCap;
+    const progress = await getEarningProgress(userObjectId);
+
+    const roiProgress = progress.roiEarned + progress.mlrOverflowToRoi;
+    const roiRemaining = Math.max(progress.roiCap - roiProgress, 0);
+    const mlrRemaining = Math.max(progress.mlrCap - progress.mlrEarned, 0);
 
     return {
       investment: {
@@ -37,27 +37,24 @@ class UserService {
       },
       roi: {
         capMultiplier: '2x',
-        limit: roiCap,
-        earned: user.totalRoiEarned,
-        remaining: Math.round(Math.max(roiCap - user.totalRoiEarned, 0) * 100) / 100,
-        isCapReached: isRoiCapReached,
+        limit: progress.roiCap,
+        earned: Math.round(roiProgress * 100) / 100,
+        remaining: Math.round(roiRemaining * 100) / 100,
+        isCapReached: progress.isRoiCapReached,
       },
       mlr: {
         capMultiplier: '2x',
-        limit: mlrCap,
-        earned: user.totalMultiLevelEarned,
-        remaining: Math.round(Math.max(mlrCap - user.totalMultiLevelEarned, 0) * 100) / 100,
-        isCapReached: isMlrCapReached,
-        isBlocked: isRoiCapReached,
-        blockedReason: isRoiCapReached ? 'ROI cap reached — all earnings stopped' : null,
+        limit: progress.mlrCap,
+        earned: Math.round(progress.mlrEarned * 100) / 100,
+        remaining: Math.round(mlrRemaining * 100) / 100,
+        isCapReached: progress.isMlrCapReached,
       },
       overall: {
         capMultiplier: '4x',
-        limit: roiCap + mlrCap,
-        earned: Math.round((user.totalRoiEarned + user.totalMultiLevelEarned) * 100) / 100,
-        remaining: Math.round(
-          (Math.max(roiCap - user.totalRoiEarned, 0) + Math.max(mlrCap - user.totalMultiLevelEarned, 0)) * 100,
-        ) / 100,
+        limit: progress.roiCap + progress.mlrCap,
+        earned: Math.round((roiProgress + progress.mlrEarned) * 100) / 100,
+        remaining: Math.round((roiRemaining + mlrRemaining) * 100) / 100,
+        isAllStopped: progress.isAllStopped,
       },
     };
   }

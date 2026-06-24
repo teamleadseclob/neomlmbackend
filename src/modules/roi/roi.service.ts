@@ -13,6 +13,7 @@ import logger from '../../config/logger';
 import { creditWithoutCutoff, creditWithCutoff, calculateCutoff } from '../../utils/cutoff';
 import RoiDistribution from '../../models/RoiDistribution';
 import { notifyEarning } from '../../utils/notifyEarning';
+import { getEarningProgress, creditRoiProgress, creditMlrProgress } from '../../models/EarningProgress';
 
 const CAP_MULTIPLIER = 2; // 200% cap for both ROI and MLR
 
@@ -62,10 +63,17 @@ class RoiService {
     for (const user of usersWithInvestments) {
       totalUsersProcessed++;
 
-      const roiCap = user.totalInvested * CAP_MULTIPLIER;
-      const roiRemaining = roiCap - user.totalRoiEarned;
+      // Check earning progress
+      const progress = await getEarningProgress(user._id);
+      if (progress.isAllStopped) {
+        totalUsersSkipped++;
+        continue;
+      }
 
-      // ROI cap reached → skip ROI + MLR for this user
+      // Check ROI progress (roiEarned + mlrOverflowToRoi)
+      const roiProgress = progress.roiEarned + progress.mlrOverflowToRoi;
+      const roiRemaining = progress.roiCap - roiProgress;
+
       if (roiRemaining <= 0) {
         totalUsersSkipped++;
         continue;
@@ -106,14 +114,19 @@ class RoiService {
         continue;
       }
 
-      // Apply ROI 2x cap
+      // Apply ROI cap via EarningProgress
       let finalRoi = Math.round(rawRoi * 100) / 100;
       let roiCapped = false;
       let capApplied = 0;
 
-      if (finalRoi > roiRemaining) {
-        capApplied = Math.round((finalRoi - roiRemaining) * 100) / 100;
-        finalRoi = Math.round(roiRemaining * 100) / 100;
+      const roiResult = await creditRoiProgress(user._id, finalRoi);
+      if (roiResult.credited === 0) {
+        totalUsersSkipped++;
+        continue;
+      }
+      if (roiResult.capped) {
+        capApplied = Math.round((finalRoi - roiResult.credited) * 100) / 100;
+        finalRoi = roiResult.credited;
         roiCapped = true;
         totalUsersCapped++;
       }
@@ -150,11 +163,8 @@ class RoiService {
       totalUsersEarned++;
       totalRoiDistributed += finalRoi;
 
-      // Distribute multi-level rewards
-      // Check: if ROI cap is NOW reached after this credit, skip MLR
-      const roiCapReachedNow = totalRoiAfter >= roiCap;
-
-      if (mlrConfigs.length > 0 && finalRoi > 0 && !roiCapReachedNow) {
+      // Distribute multi-level rewards (independent of ROI cap)
+      if (mlrConfigs.length > 0 && finalRoi > 0) {
         const mlrTotal = await this.distributeMultiLevelRewards(
           user._id,
           roiHistory._id,
@@ -249,19 +259,9 @@ class RoiService {
         continue;
       }
 
-      const earnerRoiCap = earner.totalInvested * CAP_MULTIPLIER;
-      const earnerMlrCap = earner.totalInvested * CAP_MULTIPLIER;
-
-      // Rule 1: If earner's ROI cap reached → no MLR
-      if (earner.totalRoiEarned >= earnerRoiCap) {
-        currentNode = await Network.findOne({ userId: earnerId });
-        currentLevel++;
-        continue;
-      }
-
-      // Rule 2: If earner's MLR cap reached → no MLR
-      const mlrRemaining = earnerMlrCap - earner.totalMultiLevelEarned;
-      if (mlrRemaining <= 0) {
+      // Check earning progress — skip if all stopped
+      const earnerProgress = await getEarningProgress(earnerId);
+      if (earnerProgress.isAllStopped) {
         currentNode = await Network.findOne({ userId: earnerId });
         currentLevel++;
         continue;
@@ -273,10 +273,14 @@ class RoiService {
       if (earnerRankOrder >= config.requiredRankOrder) {
         let rewardAmount = Math.round((roiAmount * config.percentage / 100) * 100) / 100;
 
-        // Apply MLR 2x cap
-        if (rewardAmount > mlrRemaining) {
-          rewardAmount = Math.round(mlrRemaining * 100) / 100;
+        // Apply MLR cap via EarningProgress (handles overflow to ROI)
+        const mlrResult = await creditMlrProgress(earnerId, rewardAmount);
+        if (mlrResult.credited === 0) {
+          currentNode = await Network.findOne({ userId: earnerId });
+          currentLevel++;
+          continue;
         }
+        rewardAmount = mlrResult.credited;
 
         if (rewardAmount > 0) {
           const { grossAmount, cutoffAmount, netAmount } = calculateCutoff(rewardAmount);
@@ -297,6 +301,8 @@ class RoiService {
             distributionBatchId: batchId,
           });
 
+          // Always count as MLR in User model (actual earning)
+          // EarningProgress handles the progress bar logic separately
           await creditWithCutoff(earnerId, rewardAmount, { totalMultiLevelEarned: rewardAmount });
 
           await notifyEarning(earnerId, 'layered_rewards', netAmount, `Level ${currentLevel}`);
@@ -417,9 +423,11 @@ class RoiService {
     if (!user) throw ApiError.notFound('User not found');
 
     const config = await RoiConfig.findOne({});
-    const cap = user.totalInvested * CAP_MULTIPLIER;
-    const roiRemaining = Math.max(cap - user.totalRoiEarned, 0);
-    const mlrRemaining = Math.max(cap - user.totalMultiLevelEarned, 0);
+    const progress = await getEarningProgress(userId);
+
+    const roiProgressValue = progress.roiEarned + progress.mlrOverflowToRoi;
+    const roiRemaining = Math.max(progress.roiCap - roiProgressValue, 0);
+    const mlrRemaining = Math.max(progress.mlrCap - progress.mlrEarned, 0);
 
     let pendingRoi = 0;
     if (config && config.dailyRoiPercentage > 0 && user.totalInvested > 0 && roiRemaining > 0) {
@@ -444,19 +452,20 @@ class RoiService {
     return {
       totalInvested: user.totalInvested,
       roi: {
-        totalEarned: user.totalRoiEarned,
-        cap,
+        totalEarned: Math.round(roiProgressValue * 100) / 100,
+        cap: progress.roiCap,
         remaining: Math.round(roiRemaining * 100) / 100,
-        isCapReached: user.totalRoiEarned >= cap,
+        isCapReached: progress.isRoiCapReached,
         pendingRoi: Math.round(pendingRoi * 100) / 100,
         dailyPercentage: config?.dailyRoiPercentage ?? 0,
       },
       multiLevelRewards: {
-        totalEarned: user.totalMultiLevelEarned,
-        cap,
+        totalEarned: Math.round(progress.mlrEarned * 100) / 100,
+        cap: progress.mlrCap,
         remaining: Math.round(mlrRemaining * 100) / 100,
-        isCapReached: user.totalMultiLevelEarned >= cap,
+        isCapReached: progress.isMlrCapReached,
       },
+      isAllStopped: progress.isAllStopped,
     };
   }
 }
