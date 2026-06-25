@@ -101,6 +101,15 @@ export const uploadFile = catchAsync(async (req: Request, res: Response) => {
   return ApiResponse.success(res, 'File uploaded successfully', { url: fileUrl });
 });
 
+export const uploadMultipleFiles = catchAsync(async (req: Request, res: Response) => {
+  const files = req.files as Express.Multer.File[];
+  if (!files || files.length === 0) {
+    throw new ApiError(400, 'No files uploaded');
+  }
+  const urls = files.map(f => `${req.protocol}://${req.get('host')}/uploads/${f.filename}`);
+  return ApiResponse.success(res, 'Files uploaded successfully', { urls });
+});
+
 // Change User Password
 export const changeUserPassword = catchAsync(async (req: Request, res: Response) => {
   await adminService.changeUserPassword(req.params.id as string, req.body.newPassword as string);

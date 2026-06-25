@@ -42,6 +42,15 @@ export const uploadFile = catchAsync(async (req, res: Response) => {
   return ApiResponse.success(res, 'File uploaded successfully', { url });
 });
 
+export const uploadMultipleFiles = catchAsync(async (req, res: Response) => {
+  const files = req.files as Express.Multer.File[];
+  if (!files || files.length === 0) {
+    throw new ApiError(400, 'No files uploaded');
+  }
+  const urls = files.map(f => `${req.protocol}://${req.get('host')}/uploads/${f.filename}`);
+  return ApiResponse.success(res, 'Files uploaded successfully', { urls });
+});
+
 export const getUserById = catchAsync(async (req, res: Response) => {
   const user = await userService.getUserByUserId(req.params.userId as string);
   return ApiResponse.success(res, 'User retrieved successfully', user);

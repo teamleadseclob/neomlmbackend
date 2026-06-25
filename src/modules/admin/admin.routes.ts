@@ -52,6 +52,7 @@ router.patch('/level-commissions/:level', validate(adminValidation.updateLevelCo
 
 // Upload
 router.post('/upload', upload.single('file'), adminController.uploadFile);
+router.post('/upload-multiple', upload.array('files', 10), adminController.uploadMultipleFiles);
 
 // Notifications
 router.post('/notifications', upload.single('image'), notificationController.createNotification);

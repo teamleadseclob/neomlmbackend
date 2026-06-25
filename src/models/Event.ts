@@ -16,9 +16,10 @@ export const STATUS_OPTIONS = ['active', 'inactive', 'maintenance'] as const;
 export interface IEvent extends Document {
   _id: Types.ObjectId;
   type: EventType;
-  imageUrl?: string;
+  imageUrls: string[];
   mediaUrl?: string;
-  pdfUrl?: string;
+  pdfUrls: string[];
+  googleMapsLink?: string;
   description: string;
   createdBy: Types.ObjectId;
   createdAt: Date;
@@ -57,9 +58,10 @@ const eventSchema = new Schema<IEvent>(
       trim: true,
       maxlength: [2000, 'Description cannot exceed 2000 characters'],
     },
-    imageUrl: { type: String, trim: true, default: null },
+    imageUrls: { type: [String], default: [] },
     mediaUrl: { type: String, trim: true, default: null },
-    pdfUrl: { type: String, trim: true, default: null },
+    pdfUrls: { type: [String], default: [] },
+    googleMapsLink: { type: String, trim: true, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
     // Contest

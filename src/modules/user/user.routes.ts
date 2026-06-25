@@ -19,6 +19,7 @@ router.get('/me/income-chart', validate(userValidation.incomeChart), userControl
 router.patch('/me', validate(userValidation.updateProfile), userController.updateProfile);
 router.post('/me/avatar', upload.single('profileImage'), userController.uploadAvatar);
 router.post('/upload', upload.single('file'), userController.uploadFile);
+router.post('/upload-multiple', upload.array('files', 10), userController.uploadMultipleFiles);
 router.get('/referrals', userController.getDirectReferrals);
 router.post('/send-referral', validate(userValidation.sendReferral), userController.sendReferral);
 router.get('/reward-wallet', rewardWalletController.getRewardWallet);
