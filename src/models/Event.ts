@@ -19,7 +19,7 @@ export interface IEvent extends Document {
   imageUrls: string[];
   mediaUrl?: string;
   pdfUrls: string[];
-  googleMapsLink?: string;
+  googleMeetLink?: string;
   description: string;
   createdBy: Types.ObjectId;
   createdAt: Date;
@@ -61,7 +61,7 @@ const eventSchema = new Schema<IEvent>(
     imageUrls: { type: [String], default: [] },
     mediaUrl: { type: String, trim: true, default: null },
     pdfUrls: { type: [String], default: [] },
-    googleMapsLink: { type: String, trim: true, default: null },
+    googleMeetLink: { type: String, trim: true, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
     // Contest

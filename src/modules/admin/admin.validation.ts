@@ -167,6 +167,30 @@ export const addUsdtToWallet: ValidationSchema = {
   }),
 };
 
+export const addFundToUser: ValidationSchema = {
+  params: Joi.object({
+    id: Joi.string()
+      .pattern(/^[a-fA-F0-9]{24}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Invalid user ID format',
+        'any.required': 'User ID is required',
+      }),
+  }),
+  body: Joi.object({
+    field: Joi.string()
+      .valid('walletBalance', 'totalMultiLevelEarned', 'totalPoolFundEarned', 'totalEarnings', 'totalRoiEarned')
+      .required()
+      .messages({
+        'any.only': 'Field must be one of: walletBalance, totalMultiLevelEarned, totalPoolFundEarned, totalEarnings, totalRoiEarned',
+        'any.required': 'Field is required',
+      }),
+    amount: Joi.number().required().messages({
+      'any.required': 'Amount is required',
+    }),
+  }),
+};
+
 export const getTransactions: ValidationSchema = {
   query: Joi.object({
     page: Joi.number().integer().min(1).default(1),

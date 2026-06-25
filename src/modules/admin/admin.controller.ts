@@ -169,6 +169,11 @@ export const addUsdtToWallet = catchAsync(async (req: Request, res: Response) =>
   return ApiResponse.success(res, 'USDT added to wallet successfully', result);
 });
 
+export const addFundToUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.addFundToUser(req.params.id as string, req.body.field as string, req.body.amount as number);
+  return ApiResponse.success(res, 'Fund added successfully', result);
+});
+
 // Recent SWP Purchases
 export const getRecentSwpPurchases = catchAsync(async (_req: Request, res: Response) => {
   const result = await adminService.getRecentSwpPurchases();

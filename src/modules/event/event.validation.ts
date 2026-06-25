@@ -6,7 +6,7 @@ const commonFields = {
   imageUrls: Joi.array().items(Joi.string().uri().trim()).max(10).default([]),
   mediaUrl: Joi.string().uri().trim().optional(),
   pdfUrls: Joi.array().items(Joi.string().uri().trim()).max(10).default([]),
-  googleMapsLink: Joi.string().uri().trim().optional().allow(null, ''),
+  googleMeetLink: Joi.string().uri().trim().optional().allow(null, ''),
 };
 
 const contestSchema = Joi.object({
@@ -69,7 +69,7 @@ export const updateEvent: ValidationSchema = {
     imageUrls: Joi.array().items(Joi.string().uri().trim()).max(10).optional(),
     mediaUrl: Joi.string().uri().trim().allow(null, '').optional(),
     pdfUrls: Joi.array().items(Joi.string().uri().trim()).max(10).optional(),
-    googleMapsLink: Joi.string().uri().trim().allow(null, '').optional(),
+    googleMeetLink: Joi.string().uri().trim().allow(null, '').optional(),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().optional(),
     packageName: Joi.string().trim().max(200).optional(),

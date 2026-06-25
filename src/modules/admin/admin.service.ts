@@ -605,6 +605,19 @@ class AdminService {
     };
   }
 
+  async addFundToUser(id: string, field: string, amount: number) {
+    const allowedFields = ['walletBalance', 'totalMultiLevelEarned', 'totalPoolFundEarned', 'totalEarnings', 'totalRoiEarned'];
+    if (!allowedFields.includes(field)) throw ApiError.badRequest(`Invalid field. Allowed: ${allowedFields.join(', ')}`);
+
+    const user = await adminRepository.findUserById(id);
+    if (!user) throw ApiError.notFound('User not found');
+    if (user.role === 'admin') throw ApiError.forbidden('Cannot add fund to admin');
+
+    await User.findByIdAndUpdate(id, { $inc: { [field]: amount } });
+    const updated = await User.findById(id).select(`name userId ${field}`).lean();
+    return { user: updated, field, amount };
+  }
+
   async addUsdtToWallet(id: string, amount: number, adminId: Types.ObjectId) {
     const user = await adminRepository.findUserById(id);
     if (!user) throw ApiError.notFound('User not found');
