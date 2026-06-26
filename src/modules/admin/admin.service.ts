@@ -16,6 +16,7 @@ import RankBonusReward from '../../models/RankBonusReward';
 import Transaction from '../../models/Transaction';
 import RoiDistribution from '../../models/RoiDistribution';
 import SpecialReward from '../../models/SpecialReward';
+import EarningProgress from '../../models/EarningProgress';
 import SystemFund, { getSystemFund } from '../../models/SystemFund';
 import PoolReward from '../../models/PoolReward';
 import { getPoolConfig } from '../../models/PoolConfig';
@@ -606,14 +607,14 @@ class AdminService {
   }
 
   async addFundToUser(id: string, field: string, amount: number) {
-    const allowedFields = ['walletBalance', 'totalMultiLevelEarned', 'totalPoolFundEarned', 'totalEarnings', 'totalRoiEarned'];
+    const allowedFields = ['walletBalance', 'totalMultiLevelEarned', 'totalPoolFundEarned', 'totalEarnings', 'totalRoiEarned', 'totalRewardWalletEarned'];
     if (!allowedFields.includes(field)) throw ApiError.badRequest(`Invalid field. Allowed: ${allowedFields.join(', ')}`);
 
     const user = await adminRepository.findUserById(id);
     if (!user) throw ApiError.notFound('User not found');
     if (user.role === 'admin') throw ApiError.forbidden('Cannot add fund to admin');
 
-    await User.findByIdAndUpdate(id, { $inc: { [field]: amount } });
+    await User.findByIdAndUpdate(id, { $set: { [field]: amount } });
     const updated = await User.findById(id).select(`name userId ${field}`).lean();
     return { user: updated, field, amount };
   }
@@ -671,6 +672,28 @@ class AdminService {
     }
 
     return { days, totalJoined, dailyData };
+  }
+
+  async setEarningCap(id: string, data: { roiCap?: number; mlrCap?: number }) {
+    const user = await adminRepository.findUserById(id);
+    if (!user) throw ApiError.notFound('User not found');
+
+    const update: Record<string, unknown> = {};
+    if (data.roiCap !== undefined) update.roiCap = data.roiCap;
+    if (data.mlrCap !== undefined) update.mlrCap = data.mlrCap;
+    if (Object.keys(update).length === 0) throw ApiError.badRequest('Provide at least roiCap or mlrCap');
+
+    update.isRoiCapReached = false;
+    update.isMlrCapReached = false;
+    update.isAllStopped = false;
+
+    const progress = await EarningProgress.findOneAndUpdate(
+      { userId: user._id },
+      { $set: update },
+      { new: true, upsert: true },
+    );
+
+    return progress;
   }
 }
 

@@ -179,3 +179,9 @@ export const getRecentSwpPurchases = catchAsync(async (_req: Request, res: Respo
   const result = await adminService.getRecentSwpPurchases();
   return ApiResponse.success(res, 'Recent SWP purchases retrieved', result);
 });
+
+// Set user earning cap
+export const setEarningCap = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.setEarningCap(req.params.id as string, req.body);
+  return ApiResponse.success(res, 'Earning cap updated successfully', result);
+});

@@ -97,6 +97,11 @@ const userSchema = new Schema<IUser>(
       default: 0,
       min: 0,
     },
+    totalRewardWalletEarned: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     withdrawnAmount: {
       type: Number,
       default: 0,

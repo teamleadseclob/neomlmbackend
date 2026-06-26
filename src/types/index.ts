@@ -21,6 +21,7 @@ export interface IUser extends Document {
   totalCutoffDeducted: number;
   totalEarnings: number;
   totalPoolFundEarned: number;
+  totalRewardWalletEarned: number;
   withdrawnAmount: number;
   lastWithdrawalDate: Date | null;
   isBlocked: boolean;

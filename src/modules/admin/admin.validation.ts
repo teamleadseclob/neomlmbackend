@@ -179,10 +179,10 @@ export const addFundToUser: ValidationSchema = {
   }),
   body: Joi.object({
     field: Joi.string()
-      .valid('walletBalance', 'totalMultiLevelEarned', 'totalPoolFundEarned', 'totalEarnings', 'totalRoiEarned')
+      .valid('walletBalance', 'totalMultiLevelEarned', 'totalPoolFundEarned', 'totalEarnings', 'totalRoiEarned', 'totalRewardWalletEarned')
       .required()
       .messages({
-        'any.only': 'Field must be one of: walletBalance, totalMultiLevelEarned, totalPoolFundEarned, totalEarnings, totalRoiEarned',
+        'any.only': 'Field must be one of: walletBalance, totalMultiLevelEarned, totalPoolFundEarned, totalEarnings, totalRoiEarned, totalRewardWalletEarned',
         'any.required': 'Field is required',
       }),
     amount: Joi.number().required().messages({

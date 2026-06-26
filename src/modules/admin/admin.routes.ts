@@ -80,4 +80,7 @@ router.patch('/users/:id/change-email', validate(adminValidation.changeUserEmail
 // 2FA Management
 router.patch('/users/:id/disable-2fa', validate(adminValidation.userIdParam), adminController.adminDisable2FA);
 
+// Earning Cap
+router.patch('/users/:id/earning-cap', adminController.setEarningCap);
+
 export default router;
