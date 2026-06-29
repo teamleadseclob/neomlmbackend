@@ -674,14 +674,14 @@ class AdminService {
     return { days, totalJoined, dailyData };
   }
 
-  async setEarningCap(id: string, data: { roiCap?: number; mlrCap?: number }) {
+  async setEarningCap(id: string, data: { roiEarned?: number; mlrEarned?: number }) {
     const user = await adminRepository.findUserById(id);
     if (!user) throw ApiError.notFound('User not found');
 
     const update: Record<string, unknown> = {};
-    if (data.roiCap !== undefined) update.roiCap = data.roiCap;
-    if (data.mlrCap !== undefined) update.mlrCap = data.mlrCap;
-    if (Object.keys(update).length === 0) throw ApiError.badRequest('Provide at least roiCap or mlrCap');
+    if (data.roiEarned !== undefined) update.roiEarned = data.roiEarned;
+    if (data.mlrEarned !== undefined) update.mlrEarned = data.mlrEarned;
+    if (Object.keys(update).length === 0) throw ApiError.badRequest('Provide at least roiEarned or mlrEarned');
 
     update.isRoiCapReached = false;
     update.isMlrCapReached = false;
