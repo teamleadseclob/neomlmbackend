@@ -113,7 +113,7 @@ class UserService {
 
   async getDashboard(userObjectId: Types.ObjectId) {
     const user = await User.findById(userObjectId).select(
-      'walletBalance swpBalance totalSwpVolume userId',
+      'walletBalance swpBalance totalSwpVolume userId totalEarnings totalPoolFundEarned totalRewardWalletEarned totalRoiEarned totalMultiLevelEarned',
     );
     if (!user) throw ApiError.notFound('User not found');
 
@@ -244,6 +244,11 @@ class UserService {
       totalDownline,
       totalSwpPurchased: user.swpBalance,
       totalTeamSwpVolume: user.totalSwpVolume,
+      totalEarnings: user.totalEarnings,
+      totalPoolFundEarned: user.totalPoolFundEarned,
+      totalRewardWalletEarned: user.totalRewardWalletEarned,
+      totalRoiEarned: user.totalRoiEarned,
+      totalMultiLevelEarned: user.totalMultiLevelEarned,
       earnings: {
         summary: {
           totalGrossEarnings: Math.round(totalGross * 100) / 100,
